@@ -15,7 +15,7 @@ exports.getAllProduct = async (req, res) => {
       _page,
       _limit,
       name,
-      categoryId,
+      category,
       color,
       size,
       _sort,
@@ -33,12 +33,22 @@ exports.getAllProduct = async (req, res) => {
       ...conditionPriceGte,
       ...conditionPriceLte,
     };
-    let conditionCategory = categoryId ? { id: { [Op.in]: categoryId } } : null;
+    let conditionCategory = category ? { slug: { [Op.in]: category } } : null;
     let conditionColor = color ? { code: { [Op.in]: color } } : null;
     let conditionSize = size ? { name: { [Op.in]: size } } : null;
     const { limit, offset } = getPagination(_page, _limit);
     const product = await Product.findAll({
       where: condition,
+      attributes: [
+        'id',
+        'name',
+        'price',
+        'amount',
+        'description',
+        'slug',
+        'status',
+        'isPromote',
+      ],
       order: [[sort, order]],
       include: [
         {
@@ -47,7 +57,7 @@ exports.getAllProduct = async (req, res) => {
           as: 'categoryInfo',
           attributes: ['id', 'slug', ['name', 'CategoryName']],
         },
-        { model: Image, as: 'imageInfo', attributes: ['url'] },
+        { model: Image, as: 'imageInfo', attributes: ['id', 'url'] },
         {
           where: conditionColor,
           model: Color,
@@ -65,23 +75,56 @@ exports.getAllProduct = async (req, res) => {
       offset,
     });
     const data = getPaginationData(product, _page, _limit);
-    res.status(200).json({ status: 'successed', data: data });
+    res.status(200).json(data);
   } catch (error) {
     res.status(404).json({ status: 'failed', message: error.message });
   }
 };
-exports.getProductById = async (req, res) => {
+// exports.getProductById = async (req, res) => {
+//   try {
+//     const product = await Product.findByPk(req.params.id, {
+//       paranoid: false,
+//       include: [{ model: Image, as: 'imageInfo', attributes: ['url'] }],
+//     });
+//     res.status(200).json({ status: 'successed', data: product });
+//   } catch (error) {
+//     res.status(404).json({ status: 'failed', message: error.message });
+//   }
+// };
+exports.getProductBySlug = async (req, res) => {
   try {
-    const product = await Product.findByPk(req.params.id, {
+    const product = await Product.findOne({
+      where: { slug: req.params.slug },
+      attributes: [
+        'id',
+        'name',
+        'price',
+        'amount',
+        'description',
+        'slug',
+        'status',
+        'isPromote',
+      ],
       paranoid: false,
-      include: [{ model: Image, as: 'imageInfo', attributes: ['url'] }],
+      include: [
+        { model: Image, as: 'imageInfo', attributes: ['url'] },
+        {
+          model: Color,
+          as: 'colorInfo',
+          attributes: ['name', 'code'],
+        },
+        {
+          model: Size,
+          as: 'sizeInfo',
+          attributes: ['name'],
+        },
+      ],
     });
     res.status(200).json({ status: 'successed', data: product });
   } catch (error) {
     res.status(404).json({ status: 'failed', message: error.message });
   }
 };
-
 exports.getAmountProductByCategory = async (req, res) => {
   const categoryId = req.params.id;
   console.log(categoryId);
@@ -140,12 +183,17 @@ exports.createProduct = async (req, res) => {
       colorInfo: [
         {
           name: 'Đỏ',
-          code: '#00000',
+          code: 'red',
+          productId: Product.id,
+        },
+        {
+          name: 'Vàng',
+          code: 'yellow',
           productId: Product.id,
         },
       ],
       imageInfo: url.map((item) => ({
-        url: item.public_id,
+        url: item.secure_url,
         ...{
           imageableId: Product.id,
           imageableType: 'product',
@@ -199,7 +247,6 @@ exports.updateProduct = async (req, res) => {
       where: { id: id },
     });
     res.status(200).json({ status: 'successed', data: productUpdated });
-    
   } catch (error) {
     res.status(500).json({ status: 'failed', message: error.message });
   }

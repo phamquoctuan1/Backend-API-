@@ -205,7 +205,12 @@ exports.LoginGoogle = async (req, res) => {
     });
     user.setRoles([1]);
     const tokenCreated = await jwtCustom.sign(
-      { id: user.id, name: user.name, picture: user.picture },
+      {
+        id: user.id,
+        name: user.name,
+        picture: user.picture,
+        email: user.email,
+      },
       process.env.ACCESS_TOKEN_SECRET,
       {
         expiresIn: '30m', // 30 minutes

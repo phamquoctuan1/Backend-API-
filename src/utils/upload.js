@@ -1,11 +1,16 @@
-const { cloudinary } = require('./cloudinary');
+const cloudinary = require('cloudinary').v2;
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
 
 exports.uploadFile = async (fileStr) => {
   console.log(fileStr);
   const uploadedResponse = await cloudinary.uploader.upload(fileStr, {
     upload_preset: 'dev_setups',
   });
-  return uploadedResponse.public_id;
+  return uploadedResponse.secure_url;
 };
 
 exports.uploadMultipleFile = async (fileStr) => {
@@ -17,6 +22,5 @@ exports.uploadMultipleFile = async (fileStr) => {
     });
     urlArray.push(uploadedResponse);
   }
-  console.log(urlArray);
   return urlArray;
 };

@@ -44,11 +44,11 @@ module.exports = (sequelize, DataTypes) => {
     {
       paranoid: true,
       deleteAt: 'softDelete',
-      getterMethods: {
-        id() {
-          return (this.id = undefined);
-        },
-      },
+      // getterMethods: {
+      //   id() {
+      //     return (this.id = undefined);
+      //   },
+      // },
     }
   );
 
