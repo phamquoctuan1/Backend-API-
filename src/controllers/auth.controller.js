@@ -52,14 +52,14 @@ exports.Register = async (req, res) => {
     const token = jwtCustom.sign(
       { id: user.id, name: user.name },
       process.env.ACCESS_TOKEN_SECRET,
-      {
-        expiresIn: '30m', // 30 minutes
-      }
+      '30m'
     );
 
-    let subject = 'Active your account';
-    let text = `Hi ${user.name} please comfirm this link to enabled your account `;
-    let html = `click on this link to verify: <a href=http://127.0.0.1:5000/api/auth/verify/${token}>${randomstring.generate()}</a>`;
+    let subject = 'Kích hoạt tài khoản của bạn';
+    let text = `Hi ${user.name} Chào mừng bạn đến với shop của chúng tôi`;
+    let html = `
+    <h3>Hi ${user.name} Bạn đã đăng ký tài khoản của chúng tôi xin hãy xác nhận kích hoạt tài khoản bằng cách<h3/>
+    Bấm vào link <a href=http://127.0.0.1:3000/verify/account/${user.id}/${token}>này</a> để kích hoạt tài khoản của bạn`;
     await sendEmail(user.email, subject, text, html);
     await t.commit();
     res.status(201).json({ message: 'Đăng ký thành công' });
@@ -76,109 +76,111 @@ exports.verifyUser = async (req, res) => {
       process.env.ACCESS_TOKEN_SECRET
     );
     const { id } = decoded;
+
     const user = await User.findByPk(id);
-    user.isEnabled = 1;
-    user.save();
-    res.redirect('http://localhost:3000/login');
+
+    if (user.isEnabled) {
+      return res.status(400).json({ message: 'Tài khoản đã được kích hoạt' });
+    } else {
+      user.isEnabled = 1;
+      user.save();
+      return res
+        .status(200)
+        .json({ message: 'kích hoạt tài khoản thành công thành công' });
+    }
   } catch (error) {
-    res.redirect('http://localhost:3000/login/failed');
+    const { id } = req.params;
+    const user = await User.findByPk(id);
+    const token = jwtCustom.sign(
+      { id: id },
+      process.env.ACCESS_TOKEN_SECRET,
+      '30m'
+    );
+
+    let subject = 'Kích hoạt tài khoản của bạn';
+    let text = `Hi ${user.name} Chào mừng bạn đến với shop của chúng tôi`;
+    let html = `
+    <h3>Hi ${user.name} Bạn đã đăng ký tài khoản của chúng tôi xin hãy xác nhận kích hoạt tài khoản bằng cách<h3/>
+    Bấm vào link <a href=http://127.0.0.1:3000/verify/account/${user.id}/${token}>này</a> để kích hoạt tài khoản của bạn`;
+    await sendEmail(user.email, subject, text, html);
+    res.status(400).json({
+      message:
+        'Link không hợp lệ hoặc đã hết hạn, Chúng tôi đã gửi lại email mới cho bạn vui lòng xác nhận nhanh chóng',
+    });
   }
 };
-exports.Login = (req, res) => {
-  User.findOne({
-    where: {
-      userName: req.body.userName,
-      isEnabled: 1,
-    },
-  })
-    .then((user) => {
-      if (!user) {
-        return res.status(404).json({ message: 'Tài khoản không tồn tại.' });
-      }
-
-      const passwordIsValid = bcrypt.compareSync(
-        req.body.password,
-        user.password
-      );
-
-      if (!passwordIsValid) {
-        return res.status(401).json({
-          accessToken: null,
-          message: 'Mật khẩu không chính xác!',
-        });
-      }
-
-      const token = jwtCustom.sign(
-        {
-          id: user.id,
-          name: user.name,
-          picture: user.picture,
-          phone: user.phone,
-          address: user.address,
-          email: user.email,
-        },
-        process.env.ACCESS_TOKEN_SECRET,
-        {
-          expiresIn: '30m', // 30 minutes
-        }
-      );
-
-      const refreshToken = jwtCustom.sign(
-        {
-          id: user.id,
-          name: user.name,
-          picture: user.picture,
-          phone: user.phone,
-          address: user.address,
-          email: user.email,
-        },
-        process.env.REFRESH_TOKEN_SECRET
-      );
-
-      user.refreshToken = refreshToken;
-      user.save();
-      const authorities = [];
-      user.getRoles().then((roles) => {
-        for (let i = 0; i < roles.length; i++) {
-          authorities.push('ROLE_' + roles[i].name.toUpperCase());
-        }
-        res.status(200).json({
-          accessToken: token,
-          refreshToken: refreshToken,
-        });
-      });
-    })
-    .catch((err) => {
-      res.status(500).json({ message: err.message });
+exports.Login = async (req, res) => {
+  try {
+    const user = await User.findOne({
+      where: {
+        userName: req.body.userName,
+        isEnabled: 1,
+      },
     });
+    if (!user) {
+      return res.status(404).json({ message: 'Tài khoản không tồn tại.' });
+    }
+    const passwordIsValid = bcrypt.compareSync(
+      req.body.password,
+      user.password
+    );
+    if (!passwordIsValid) {
+      return res.status(401).json({
+        accessToken: null,
+        message: 'Mật khẩu không chính xác!',
+      });
+    }
+    const accessToken = await jwtCustom.sign(
+      {
+        id: user.id,
+        name: user.name,
+        picture: user.picture,
+        phone: user.phone,
+        address: user.address,
+        email: user.email,
+      },
+      process.env.ACCESS_TOKEN_SECRET,
+      '2d'
+    );
+    const refreshToken = await jwtCustom.sign(
+      {
+        id: user.id,
+        name: user.name,
+        picture: user.picture,
+        phone: user.phone,
+        address: user.address,
+        email: user.email,
+      },
+      process.env.REFRESH_TOKEN_SECRET,
+      '3h'
+    );
+    const response = { accessToken, refreshToken };
+    user.refreshToken = refreshToken;
+    await user.save();
+    res.status(200).json(response);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
 };
 
-exports.RefreshToken = (req, res) => {
-  const refreshToken = req.body.token;
-  if (!refreshToken) res.status(401).json({ message: 'Unauthorized' });
-  User.findOne({ where: { refreshToken: refreshToken } })
-    .then((user, err) => {
-      if (user) {
-        jwt.verify(
-          refreshToken,
-          process.env.REFRESH_TOKEN_SECRET,
-          (err, user) => {
-            if (err) res.status(403);
-            const accessToken = jwt.sign(
-              { id: user.id, name: user.name, picture: user.picture },
-              process.env.ACCESS_TOKEN_SECRET,
-              {
-                expiresIn: '15m',
-              }
-            );
-            res.status(200).json({ accessToken: accessToken });
-          }
-        );
-      }
-    })
-    .catch((err) => {
-      res.status(500).json({ message: err.message });
-    });
+exports.RefreshToken = async (req, res) => {
+  try {
+    const refreshToken = req.body.token;
+    if (!refreshToken)
+      return res.status(401).json({ message: 'Token hết hạn' });
+    const user = await jwtCustom.verify(
+      refreshToken,
+      process.env.REFRESH_TOKEN_SECRET
+    );
+    const accessToken = jwtCustom.sign(
+      { user },
+      process.env.ACCESS_TOKEN_SECRET,
+      '2d'
+    );
+    res.status(200).json({ accessToken: accessToken });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
 };
 
 exports.LoginGoogle = async (req, res) => {
@@ -212,9 +214,7 @@ exports.LoginGoogle = async (req, res) => {
         email: user.email,
       },
       process.env.ACCESS_TOKEN_SECRET,
-      {
-        expiresIn: '30m', // 30 minutes
-      }
+      '3d'
     );
     const dataUser = {
       id: user.id,
@@ -243,16 +243,14 @@ exports.forgetUser = async (req, res) => {
     const token = jwtCustom.sign(
       { id: user.id, name: user.name, picture: user.picture },
       process.env.ACCESS_TOKEN_SECRET,
-      {
-        expiresIn: '15m', // 15 minutes
-      }
+      '3d'
     );
     let subject = 'Khôi phục lại tài khoản';
-    let text = `Xin chào ${user.name} Hãy nhấn xác nhận đường link bên dưới để có thể lấy lại tài khoản của bạn, link chỉ có thời hạn 15p vui lòng xác nhận sớm! `;
-    let html = `<h2>Bấm vào link dưới đây</h2>  <a href=http://127.0.0.1:5000/api/auth/password-reset/${user.id}/${token}>http://127.0.0.1:5000/api/auth/password-reset/${user.id}/${token}</a>`;
+    let text = `Xin chào ${user.name} Hãy nhấn xác nhận đường link bên dưới để có thể lấy lại tài khoản của bạn, link chỉ có thời hạn 30p vui lòng xác nhận sớm! `;
+    let html = `Bấm vào link<a href=http://localhost:3000/forget/${user.id}/${token}>Này</a> để khôi mục tài khoản của bạn`;
     await sendEmail(user.email, subject, text, html);
     res.status(200).json({
-      status: 'Thành ',
+      status: 'Thành công',
       message: 'Link khôi phục mật khẩu đã được gửi tới email của bạn!',
     });
     await t.commit();
@@ -260,28 +258,6 @@ exports.forgetUser = async (req, res) => {
     await t.rollback();
     res.status(500).json({ error: error.message });
   }
-};
-exports.redirectToForgetPage = async (req, res) => {
-  const user = await User.findByPk(req.params.id);
-  if (!user) {
-    return res
-      .status(400)
-      .json({ message: 'Link không hợp lệ hoặc đã hết hạn' });
-  }
-  const decoded = await jwtCustom.verify(
-    req.params.token,
-    process.env.ACCESS_TOKEN_SECRET
-  );
-  if (!decoded) {
-    return res
-      .status(400)
-      .json({ message: 'Link không hợp lệ hoặc đã hết hạn' });
-  }
-  res
-    .status(200)
-    .redirect(
-      `http://localhost:3000/forget/${req.params.id}/${req.params.token}`
-    );
 };
 exports.recoveryUser = async (req, res) => {
   try {

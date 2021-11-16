@@ -28,8 +28,7 @@ router
   )
   .post('/google/login', LoginGoogle)
   .post('/refreshtoken', RefreshToken)
-  .get('/verify/:token', verifyUser)
+  .get('/verify/:id/:token', verifyUser)
   .post('/forgetuser', forgetUser)
-  .get('/password-reset/:id/:token', redirectToForgetPage)
   .post('/password-reset/:id/:token', recoveryUser);
 module.exports = router;

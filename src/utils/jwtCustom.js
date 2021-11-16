@@ -1,8 +1,10 @@
 var jwt = require('jsonwebtoken');
 
 exports.jwtCustom = {
-  sign: function (obj, secret) {
-    return jwt.sign(obj, secret);
+  sign: function (obj, secret, time = '30m') {
+    return jwt.sign(obj, secret, {
+      expiresIn: time,
+    });
   },
 
   verify: function (token, secret) {

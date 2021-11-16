@@ -42,7 +42,8 @@ module.exports = (sequelize, DataTypes) => {
       },
       picture: {
         type: DataTypes.STRING,
-        defaultValue: 'dev_setups/kc4yo5bzpwyfgrv3zctq',
+        defaultValue:
+          'https://res.cloudinary.com/quoctuan/image/upload/v1636304147/dev_setups/kc4yo5bzpwyfgrv3zctq.png',
         allowNull: true,
       },
     },
