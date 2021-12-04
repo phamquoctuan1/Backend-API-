@@ -6,7 +6,7 @@ const {
   LoginGoogle,
   verifyUser,
   getUser,
-  redirectToForgetPage,
+  loginAdmin,
   forgetUser,
   recoveryUser,
 } = require('../controllers/auth.controller');
@@ -18,6 +18,7 @@ const router = express.Router();
 router
   .get('/user', authJwt.verifyToken, getUser)
   .post('/login', Login)
+  .post('/admin/login', authJwt.isEmployeeOrAdmin, loginAdmin)
   .post(
     '/register',
     [
@@ -27,7 +28,7 @@ router
     Register
   )
   .post('/google/login', LoginGoogle)
-  .post('/refreshtoken', RefreshToken)
+  .post('/refreshtoken',authJwt.verifyToken, RefreshToken)
   .get('/verify/:id/:token', verifyUser)
   .post('/forgetuser', forgetUser)
   .post('/password-reset/:id/:token', recoveryUser);

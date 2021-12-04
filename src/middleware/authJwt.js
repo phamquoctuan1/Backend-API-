@@ -1,6 +1,7 @@
 const jwt = require('jsonwebtoken');
 const db = require('../models');
 const User = db.user;
+const bcrypt = require('bcryptjs');
 
 verifyToken = (req, res, next) => {
   const authHeader = String(req.headers['authorization'] || '');
@@ -14,14 +15,14 @@ verifyToken = (req, res, next) => {
     jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
       if (err) {
         return res.status(403).send({
-          message: 'Unauthorized!',
+          message: 'Token không hợp lệ!',
         });
       }
       req.userInfo = decoded;
       next();
     });
   } else {
-    res.status(403).json({ status: 'failed', message: 'Unauthorized!' });
+    res.status(403).json({ status: 'failed', message: 'Sai!' });
   }
 };
 
@@ -65,33 +66,47 @@ isEmployee = (req, res, next) => {
       res.status(500).json({ err: err.message });
     });
 };
-
-isEmployeeOrAdmin = (req, res, next) => {
-  User.findByPk(req.userInfo.id)
-    .then((user) => {
-      user.getRoles().then((roles) => {
-        for (let i = 0; i < roles.length; i++) {
-          if (roles[i].name === 'employee') {
-            next();
-            return;
-          }
-
-          if (roles[i].name === 'admin') {
-            next();
-            return;
-          }
-        }
-
-        res.status(403).send({
-          message: 'Require Employee or Admin Role!',
-        });
-      });
-    })
-    .catch((err) => {
-      res.status(500).json({ err: err.message });
+isEmployeeOrAdmin = async (req, res, next) => {
+  try {
+    const user = await User.findOne({
+      where: {
+        userName: req.body.userName,
+        isEnabled: 1,
+      },
     });
-};
-
+    if (!user) {
+      return res.status(404).json({ message: 'Tài khoản không tồn tại.' });
+    }
+    const passwordIsValid = bcrypt.compareSync(
+      req.body.password,
+      user.password
+    );
+    if (!passwordIsValid) {
+      return res.status(401).json({
+        accessToken: null,
+        message: 'Mật khẩu không chính xác!',
+      });
+    }
+    const roles = await user.getRoles();
+    for (let i = 0; i < roles.length; i++) {
+      if (roles[i].name === 'employee') {
+        req.user = user;
+        next();
+        return;
+      }
+      if (roles[i].name === 'admin') {
+         req.user= user;
+        next();
+        return;
+      }
+      res.status(403).json({
+        message: 'Không được phép truy cập!',
+      });
+    }
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+      }
 const authJwt = {
   verifyToken: verifyToken,
   isAdmin: isAdmin,

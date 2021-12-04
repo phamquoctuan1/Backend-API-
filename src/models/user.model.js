@@ -36,15 +36,15 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.STRING,
         allowNull: true,
       },
-      refreshToken: {
-        type: DataTypes.STRING,
-        allowNull: true,
-      },
       picture: {
         type: DataTypes.STRING,
         defaultValue:
           'https://res.cloudinary.com/quoctuan/image/upload/v1636304147/dev_setups/kc4yo5bzpwyfgrv3zctq.png',
         allowNull: true,
+      },
+      refreshToken: {
+        type: DataTypes.TEXT,
+        unique: true,
       },
     },
     {

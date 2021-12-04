@@ -2,9 +2,53 @@ const db = require('../models');
 const User = db.user;
 const Role = db.role;
 const Op = db.Sequelize.Op;
+const OrderProduct =db.order_product
 const { uploadFile } = require('../utils/upload');
+const Order = db.order
 const bcrypt = require('bcryptjs');
-
+exports.getUserById = async (req, res) => {
+  try {
+     const {id} = req.params
+    const user = await User.findByPk(id)
+      res.status(200).json(user);
+  } catch (error) {
+    res
+      .status(400)
+      .json({ message: 'Không tìm thấy khách hàng', error: error.message });
+  }
+  
+}
+exports.getOrderUser = async (req, res) => {
+  try {
+    const {id} = req.params
+    const user = await User.findByPk(id, {
+      attributes: ['name', 'phone', 'address'],
+      include: [
+        {
+          model: Order,
+          as: 'orderInfo',
+          attributes: ['id','name', 'amount', 'status', 'createdAt', 'orderType'],
+        },
+      ],
+    });
+    res.status(200).json(user);
+  } catch (error) {
+       res.status(400).json({ message: 'Không tìm thấy đơn hàng', error : error.message});
+  }
+}
+exports.getOrderDetailUser = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const orderDetails = await OrderProduct.findAll({
+      where: { orderId: id },
+    });
+    res.status(200).json(orderDetails);
+  } catch (error) {
+    res
+      .status(400)
+      .json({ message: 'Không tìm thấy đơn hàng', error: error.message });
+  }
+};
 exports.updateUser = async (req, res) => {
   try {
     let userUpdate = req.body;
@@ -25,7 +69,7 @@ exports.updateUser = async (req, res) => {
     }
     const newUser = await User.findOne({
       where: { id: userUpdate.id },
-      attributes: ['name', 'email', 'picture', 'phone', 'address'],
+      attributes: ['id','name', 'email', 'picture', 'phone', 'address'],
     });
     res
       .status(200)

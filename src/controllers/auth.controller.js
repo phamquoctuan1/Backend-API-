@@ -3,13 +3,13 @@ const User = db.user;
 const Role = db.role;
 const Op = db.Sequelize.Op;
 const { uploadFile } = require('../utils/upload');
-const jwt = require('jsonwebtoken');
+const randToken = require('rand-token');
 const { jwtCustom } = require('../utils/jwtCustom');
 const bcrypt = require('bcryptjs');
-const e = require('express');
+
 const { OAuth2Client } = require('google-auth-library');
 const sendEmail = require('../utils/sendmail');
-const { restart } = require('nodemon');
+
 const randomstring = require('randomstring');
 
 exports.getUser = async (req, res) => {
@@ -44,15 +44,12 @@ exports.Register = async (req, res) => {
           },
         },
       });
-      console.log(roles);
       user.setRoles(roles);
     } else {
       user.setRoles([1]);
     }
     const token = jwtCustom.sign(
-      { id: user.id, name: user.name },
-      process.env.ACCESS_TOKEN_SECRET,
-      '30m'
+      { id: user.id, name: user.name }
     );
 
     let subject = 'Kích hoạt tài khoản của bạn';
@@ -72,8 +69,8 @@ exports.verifyUser = async (req, res) => {
   try {
     const { token } = req.params;
     const decoded = await jwtCustom.verify(
-      token,
-      process.env.ACCESS_TOKEN_SECRET
+      token
+    
     );
     const { id } = decoded;
 
@@ -91,13 +88,11 @@ exports.verifyUser = async (req, res) => {
   } catch (error) {
     const { id } = req.params;
     const user = await User.findByPk(id);
-    const token = jwtCustom.sign(
-      { id: id },
-      process.env.ACCESS_TOKEN_SECRET,
-      '30m'
+    const token = await jwtCustom.sign(
+      { id }
     );
 
-    let subject = 'Kích hoạt tài khoản của bạn';
+    let subject = 'Kích hoạt lại tài khoản của bạn';
     let text = `Hi ${user.name} Chào mừng bạn đến với shop của chúng tôi`;
     let html = `
     <h3>Hi ${user.name} Bạn đã đăng ký tài khoản của chúng tôi xin hãy xác nhận kích hoạt tài khoản bằng cách<h3/>
@@ -130,6 +125,7 @@ exports.Login = async (req, res) => {
         message: 'Mật khẩu không chính xác!',
       });
     }
+   
     const accessToken = await jwtCustom.sign(
       {
         id: user.id,
@@ -138,11 +134,26 @@ exports.Login = async (req, res) => {
         phone: user.phone,
         address: user.address,
         email: user.email,
-      },
-      process.env.ACCESS_TOKEN_SECRET,
-      '2d'
+      } 
     );
-    const refreshToken = await jwtCustom.sign(
+    let refreshToken = randToken.generate(process.env.JWT_REFRESH_TOKEN_SIZE); // tạo 1 refresh token ngẫu 
+    if (!user.refreshToken) {
+       user.refreshToken = refreshToken;
+       await user.save();
+    } else {
+      refreshToken = user.refreshToken;
+    }
+    const response = { accessToken, refreshToken }; 
+    res.status(200).json(response);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+exports.loginAdmin = async (req, res) => {
+  try{
+    const user = req.user 
+    const accessToken = await jwtCustom.sign(
       {
         id: user.id,
         name: user.name,
@@ -150,13 +161,16 @@ exports.Login = async (req, res) => {
         phone: user.phone,
         address: user.address,
         email: user.email,
-      },
-      process.env.REFRESH_TOKEN_SECRET,
-      '3h'
+      }
     );
+   let refreshToken = randToken.generate(process.env.JWT_REFRESH_TOKEN_SIZE); // tạo 1 refresh token ngẫu
+   if (!user.refreshToken) {
+     user.refreshToken = refreshToken;
+     await user.save();
+   } else {
+     refreshToken = user.refreshToken;
+   }
     const response = { accessToken, refreshToken };
-    user.refreshToken = refreshToken;
-    await user.save();
     res.status(200).json(response);
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -165,18 +179,32 @@ exports.Login = async (req, res) => {
 
 exports.RefreshToken = async (req, res) => {
   try {
-    const refreshToken = req.body.token;
+    const refreshToken = req.body.refreshToken;
     if (!refreshToken)
       return res.status(401).json({ message: 'Token hết hạn' });
-    const user = await jwtCustom.verify(
-      refreshToken,
-      process.env.REFRESH_TOKEN_SECRET
-    );
-    const accessToken = jwtCustom.sign(
-      { user },
-      process.env.ACCESS_TOKEN_SECRET,
-      '2d'
-    );
+    const { name,id, 
+picture,
+phone,
+address,
+email} = req.userInfo;
+    console.log(id)
+    const user = await User.findByPk(id)
+    if(!user)
+    {
+      return res.status(401).json('User không tồn tại.');
+    }
+
+    if (refreshToken !== user.refreshToken) {
+      return res.status(400).json('Refresh token không hợp lệ.');
+    }
+    const accessToken = jwtCustom.sign({
+      id,
+      name,
+      picture,
+      phone,
+      address,
+      email,
+    });
     res.status(200).json({ accessToken: accessToken });
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -212,9 +240,7 @@ exports.LoginGoogle = async (req, res) => {
         name: user.name,
         picture: user.picture,
         email: user.email,
-      },
-      process.env.ACCESS_TOKEN_SECRET,
-      '3d'
+      }
     );
     const dataUser = {
       id: user.id,
@@ -241,9 +267,7 @@ exports.forgetUser = async (req, res) => {
         .json({ message: 'Email không tồn tại trong hệ thống' });
     }
     const token = jwtCustom.sign(
-      { id: user.id, name: user.name, picture: user.picture },
-      process.env.ACCESS_TOKEN_SECRET,
-      '3d'
+      { id: user.id, name: user.name, picture: user.picture }
     );
     let subject = 'Khôi phục lại tài khoản';
     let text = `Xin chào ${user.name} Hãy nhấn xác nhận đường link bên dưới để có thể lấy lại tài khoản của bạn, link chỉ có thời hạn 30p vui lòng xác nhận sớm! `;
@@ -268,8 +292,7 @@ exports.recoveryUser = async (req, res) => {
         .json({ message: 'Link không hợp lệ hoặc đã hết hạn' });
 
     const decoded = await jwtCustom.verify(
-      req.params.token,
-      process.env.ACCESS_TOKEN_SECRET
+      req.params.token 
     );
     if (!decoded) {
       return res

@@ -3,6 +3,13 @@ const ROLES = db.ROLES;
 const User = db.user;
 
 checkDuplicateUsernameOrEmail = (req, res, next) => {
+
+   if (req.body.password.length < 8) {
+     res.status(400).send({
+       message: 'Mật khẩu phải trên 8 ký tự',
+     });
+     return;
+   }
   // Username
   User.findOne({
     where: {
@@ -28,7 +35,7 @@ checkDuplicateUsernameOrEmail = (req, res, next) => {
         });
         return;
       }
-
+     
       next();
     });
   });

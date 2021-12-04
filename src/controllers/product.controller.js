@@ -1,3 +1,4 @@
+
 const db = require('../models');
 const Op = db.Sequelize.Op;
 const Product = db.product;
@@ -5,54 +6,63 @@ const Category = db.category;
 const Image = db.image;
 const Color = db.color;
 const Size = db.size;
+const Promote = db.promote;
 const Brand = db.brand;
+const OrderProduct = db.order_product;
 const { getPaginationData, getPagination } = require('../utils/pagination');
-const { uploadMultipleFile } = require('../utils/upload');
+const { uploadMultipleFile,deleteAllFile } = require('../utils/upload');
 
 exports.getAllProduct = async (req, res) => {
   try {
+   
     const {
       _page,
       _limit,
       name,
-      category,
+      categoryId,
       color,
       size,
       _sort,
       _order,
-      pricegte,
-      pricelte,
+      price,
     } = req.query;
+     const LIMIT_PRODUCT = 12;
+    const pageint = parseInt(_page);
+    let limit = _limit ? parseInt(_limit) : LIMIT_PRODUCT;
+    let offset = _page ? parseInt(_page - 1) * limit : null;
     const sort = _sort ? _sort : 'id';
     const order = _order ? _order : 'ASC';
     let conditionName = name ? { name: { [Op.like]: `%${name}%` } } : {};
-    let conditionPriceGte = pricegte ? { price: { [Op.gte]: pricegte } } : {};
-    let conditionPriceLte = pricelte ? { price: { [Op.lte]: pricelte } } : {};
+    let conditionPrice = price ? { price: { [Op.between]: [price,300000] } } : {};
     let condition = {
       ...conditionName,
-      ...conditionPriceGte,
-      ...conditionPriceLte,
+      ...conditionPrice,
     };
-    let conditionCategory = category ? { slug: { [Op.in]: category } } : null;
+    // let conditionCategory = category ? { slug: { [Op.in]: category } } : null;
+    let conditionCategoryId = categoryId
+      ? { id: { [Op.eq]: categoryId } }
+      : null;
     let conditionColor = color ? { code: { [Op.in]: color } } : null;
     let conditionSize = size ? { name: { [Op.in]: size } } : null;
-    const { limit, offset } = getPagination(_page, _limit);
-    const product = await Product.findAll({
+   
+    const product = await Product.findAndCountAll({
       where: condition,
       attributes: [
         'id',
         'name',
         'price',
-        'amount',
+        'quantity',
         'description',
         'slug',
         'status',
-        'isPromote',
+        'createdBy',
+        'categoryId',
+        'discount_percentage',
       ],
       order: [[sort, order]],
       include: [
         {
-          where: conditionCategory,
+          where: conditionCategoryId,
           model: Category,
           as: 'categoryInfo',
           attributes: ['id', 'slug', ['name', 'CategoryName']],
@@ -71,26 +81,56 @@ exports.getAllProduct = async (req, res) => {
           attributes: ['name'],
         },
       ],
-      limit,
+      distinct: true,
       offset,
+      limit,
     });
-    const data = getPaginationData(product, _page, _limit);
+    const data = getPaginationData(product.rows, product.count, pageint, limit);
     res.status(200).json(data);
   } catch (error) {
     res.status(404).json({ status: 'failed', message: error.message });
   }
 };
-// exports.getProductById = async (req, res) => {
-//   try {
-//     const product = await Product.findByPk(req.params.id, {
-//       paranoid: false,
-//       include: [{ model: Image, as: 'imageInfo', attributes: ['url'] }],
-//     });
-//     res.status(200).json({ status: 'successed', data: product });
-//   } catch (error) {
-//     res.status(404).json({ status: 'failed', message: error.message });
-//   }
-// };
+exports.getProductById = async (req, res) => {
+  try {
+    const product = await Product.findByPk(req.params.id, {
+      paranoid: false,
+      attributes: [
+        'id',
+        'name',
+        'price',
+        'quantity',
+        'description',
+        'categoryId',
+        'slug',
+        'status',
+        'createdBy',
+        'discount_percentage',
+      ],
+      include: [
+        // {
+        //   model: Category,
+        //   as: 'categoryInfo',
+        //   attributes: ['id', 'slug', ['name', 'CategoryName']],
+        // },
+        { model: Image, as: 'imageInfo', attributes: ['url', 'publicId'] },
+        {
+          model: Color,
+          as: 'colorInfo',
+          attributes: ['name', 'code'],
+        },
+        {
+          model: Size,
+          as: 'sizeInfo',
+          attributes: ['name'],
+        },
+      ],
+    });
+    res.status(200).json({ status: 'successed', data: product });
+  } catch (error) {
+    res.status(404).json({ status: 'failed', message: error.message });
+  }
+};
 exports.getProductBySlug = async (req, res) => {
   try {
     const product = await Product.findOne({
@@ -99,15 +139,14 @@ exports.getProductBySlug = async (req, res) => {
         'id',
         'name',
         'price',
-        'amount',
+        'quantity',
         'description',
         'slug',
         'status',
-        'isPromote',
       ],
       paranoid: false,
       include: [
-        { model: Image, as: 'imageInfo', attributes: ['url'] },
+        { model: Image, as: 'imageInfo', attributes: ['url','publicId'] },
         {
           model: Color,
           as: 'colorInfo',
@@ -150,54 +189,44 @@ exports.getAmountProductByCategory = async (req, res) => {
 exports.createProduct = async (req, res) => {
   const t = await db.sequelize.transaction();
   const {
-    id,
-    title,
+    name,
     price,
-    amount,
-    isPromote,
+    quantity,
     description,
+    discount_percentage,
     status,
     categoryId,
-    fileName,
+    imageInfo,
     sizeInfo,
+    colorInfo,
   } = req.body;
   try {
-    const url = await uploadMultipleFile(fileName);
-    console.log({ url: url });
+    const url = await uploadMultipleFile(imageInfo);
     let productData = {
-      id: id,
-      name: title,
+      name: name,
       price: price,
-      amount: amount,
-      isPromote: isPromote,
+      quantity: quantity,
+      discount_percentage:discount_percentage,
       description: description,
       status: status,
       categoryId: categoryId,
       createdBy: req.userInfo.name,
-      sizeInfo: sizeInfo.map((size) => {
-        return {
-          name: size.name,
-          ...{ productId: Product.id },
-        };
-      }),
-      colorInfo: [
-        {
-          name: 'Đỏ',
-          code: 'red',
-          productId: Product.id,
-        },
-        {
-          name: 'Vàng',
-          code: 'yellow',
-          productId: Product.id,
-        },
-      ],
+      sizeInfo: sizeInfo.map((size) => ({
+        name: size.name,
+        ...{ productId: Product.id },
+      })),
+      colorInfo: colorInfo.map((color) => ({
+        name: color.name,
+        code: color.code,
+        ...{ productId: Product.id },
+      })),
       imageInfo: url.map((item) => ({
         url: item.secure_url,
+        publicId: item.public_id,
         ...{
           imageableId: Product.id,
           imageableType: 'product',
-          name: title,
+          name: name,
         },
       })),
     };
@@ -210,22 +239,28 @@ exports.createProduct = async (req, res) => {
       transaction: t,
     });
     await t.commit();
-    res.status(201).json({ status: 'successed', data: newProduct });
+    res.status(201).json({ status: 'Thành công' });
   } catch (error) {
     await t.rollback();
-    res.status(500).json({ status: 'failed', message: error });
+    res.status(500).send({ status: 'Thất bại', message: error.message });
   }
 };
 
 exports.deleteProduct = async (req, res) => {
   const { id } = req.params;
   try {
+    const product = await OrderProduct.findOne({
+      where: { productId: id },
+    });
+    if (product) {
+      return res.status(400).send({ message: 'Không thể xóa sản phẩm này' });
+    }
     const deletedProduct = await Product.destroy({
       where: { id: id },
     });
-    res.status(202).json({ status: 'successed', data: deletedProduct });
+    res.status(202).json({ message: 'Thành công', data: deletedProduct });
   } catch (error) {
-    res.status(500).json({ status: 'failed', message: error.message });
+    res.status(500).json({ status: 'Thất bại', message: error.message });
   }
 };
 exports.restoreProduct = async (req, res) => {
@@ -240,14 +275,65 @@ exports.restoreProduct = async (req, res) => {
   }
 };
 exports.updateProduct = async (req, res) => {
-  const { id } = req.params;
-  const dataUpdate = req.body;
+  const t = await db.sequelize.transaction();
   try {
-    productUpdated = await Product.update(dataUpdate, {
+  const { id } = req.params;
+  const data = req.body
+  let sizeToUpdate = [];
+   let colorToUpdate = [];
+    let imagetoUpdate = [];
+    if(data.sizeInfo.length > 0) {
+    sizeToUpdate = data.sizeInfo.map((size) => ({
+        name: size.name,
+        ...{ productId: id },
+      }))
+      await Size.destroy({where:{productId:id},transaction:t})
+    }
+
+       if (data.colorInfo.length > 0) {
+         colorToUpdate = data.colorInfo.map((color) => ({
+           name: color.name,
+           code: color.code,
+           ...{ productId: id },
+         }));
+        await Color.destroy({ where: { productId: id },transaction:t });
+        }
+          if (data.imageInfo.length > 0 && data.imageInfo[0].hasOwnProperty('url')) {
+            imagetoUpdate = [];
+          }else{
+            const imageToDelete =  await Image.findAll({where: { imageableId: id,imageableType:'product'}})
+            const public_idsToDelete = imageToDelete.map(item=> item['publicId'])
+            await deleteAllFile(public_idsToDelete);
+            await Image.destroy({ where: { imageableId: id,imageableType:'product' },transaction:t }); 
+             const url = await uploadMultipleFile(data.imageInfo);
+            imagetoUpdate = url.map((image) => ({
+            url: image.secure_url,
+            publicId: image.public_id,
+            ...{
+
+              imageableId: id,
+              imageableType: 'product',
+              name: data.name,
+            },
+          }));   
+          
+           
+          }
+
+  const sizeNew = await Size.bulkCreate(sizeToUpdate,{transaction: t});
+  const colorNew = await Color.bulkCreate(colorToUpdate, { transaction: t });
+  const imageNew = await Image.bulkCreate(imagetoUpdate, {
+    transaction: t,
+  });
+ 
+  const productUpdated = await Product.update(data, {
       where: { id: id },
+      transaction: t,
     });
-    res.status(200).json({ status: 'successed', data: productUpdated });
+      t.commit()
+  res.status(200).json({ status: 'Thành Công' });
   } catch (error) {
-    res.status(500).json({ status: 'failed', message: error.message });
+    t.rollback();
+    res.status(500).json({ status: 'Thất bại', message: error.message });
   }
 };

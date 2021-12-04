@@ -4,11 +4,13 @@ cloudinary.config({
   api_key: process.env.CLOUDINARY_API_KEY,
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
-
+exports.deleteAllFile = async (fileStr) => {
+  await cloudinary.api.delete_resources(fileStr);
+}; 
 exports.uploadFile = async (fileStr) => {
   console.log(fileStr);
   const uploadedResponse = await cloudinary.uploader.upload(fileStr, {
-    upload_preset: 'dev_setups',
+    upload_preset: 'avatar_user',
   });
   return uploadedResponse.secure_url;
 };
@@ -18,7 +20,7 @@ exports.uploadMultipleFile = async (fileStr) => {
   for (let index = 0; index < fileStr.length; index++) {
     const element = fileStr[index];
     uploadedResponse = await cloudinary.uploader.upload(element, {
-      upload_preset: 'dev_setups',
+      upload_preset: 'product',
     });
     urlArray.push(uploadedResponse);
   }

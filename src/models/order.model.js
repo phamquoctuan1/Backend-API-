@@ -1,3 +1,5 @@
+const db = require(".");
+
 module.exports = (sequelize, DataTypes) => {
   const Order = sequelize.define('order', {
     name: {
@@ -5,16 +7,12 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: false,
       unique: true,
     },
-    total: {
-      type: DataTypes.INTEGER,
-      allowNull: true,
-    },
     amount: {
       type: DataTypes.INTEGER,
       defaultValue: 1,
     },
-    price: {
-      type: DataTypes.INTEGER,
+    orderType: {
+      type: DataTypes.STRING,
     },
     status: {
       type: DataTypes.BOOLEAN,
@@ -24,6 +22,8 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.STRING,
       allowNull: true,
     },
+    
   });
+  
   return Order;
 };

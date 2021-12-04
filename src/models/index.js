@@ -53,11 +53,12 @@ db.color = require('./color.model.js')(sequelize, DataTypes);
 db.image = require('./image.model.js')(sequelize, DataTypes);
 db.order = require('./order.model.js')(sequelize, DataTypes);
 db.product = require('./product.model.js')(sequelize, DataTypes);
-db.promote = require('./promote.model.js')(sequelize, DataTypes);
+
 db.role = require('./role.model.js')(sequelize, DataTypes);
 db.size = require('./size.model.js')(sequelize, DataTypes);
 db.user = require('./user.model.js')(sequelize, DataTypes);
-
+db.order_product = require('./order_product.model.js')(sequelize, DataTypes)
+db.shipment = require('./shipment.model.js')(sequelize, DataTypes)
 db.category.belongsTo(db.category, { as: 'parent', foreignKey: 'parentId' });
 db.category.hasMany(db.category, { as: 'children', foreignKey: 'parentId' });
 
@@ -70,7 +71,14 @@ db.product.belongsTo(db.category, {
   foreignKey: 'categoryId',
   as: 'categoryInfo',
 });
-
+db.shipment.belongsTo(db.order, {
+  foreignKey: 'orderId',
+  as: 'orderInfo',
+});
+db.order.hasOne(db.shipment, {
+  foreignKey: 'orderId',
+  as: 'shipmentInfo',
+});
 //brand with product
 db.brand.hasMany(db.category, {
   foreignKey: {
@@ -122,15 +130,25 @@ db.color.belongsTo(db.product, {
 });
 
 //order with product
-db.order.belongsToMany(db.product, {
-  through: 'order_product',
-  foreignKey: 'orderId',
-  otherKey: 'productId',
-});
-db.product.belongsToMany(db.order, {
-  through: 'order_product',
+db.product.hasMany(db.order_product, {
+  onDelete: 'CASCADE',
+  onUpdate: 'CASCADE',
   foreignKey: 'productId',
-  otherKey: 'orderId',
+  as: 'OrderDetails',
+});
+db.order_product.belongsTo(db.product, {
+  foreignKey: 'productId',
+  as: 'productInfo',
+});
+db.order.hasMany(db.order_product, {
+  onDelete: 'CASCADE',
+  onUpdate: 'CASCADE',
+  foreignKey: 'orderId',
+  as: 'OrderDetails',
+});
+db.order_product.belongsTo(db.order, {
+  foreignKey: 'orderId',
+  as: 'orderInfo',
 });
 
 //user with order
@@ -145,14 +163,8 @@ db.order.belongsTo(db.user, {
   as: 'userInfo',
 });
 
-//promote with imgage
-db.promote.hasMany(db.image, {
-  foreignKey: 'imageableId',
-  constraints: false,
-  scope: {
-    imageableType: 'promote',
-  },
-});
+//promote with product
+
 
 db.banner.hasMany(db.image, {
   foreignKey: 'imageableId',
@@ -162,11 +174,6 @@ db.banner.hasMany(db.image, {
   },
 });
 
-db.image.belongsTo(db.promote, {
-  foreignKey: 'imageableId',
-  constraints: false,
-  as: 'promote',
-});
 
 db.image.belongsTo(db.banner, {
   foreignKey: 'imageableId',

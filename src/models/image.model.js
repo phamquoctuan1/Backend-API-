@@ -7,6 +7,9 @@ module.exports = (sequelize, DataTypes) => {
     url: {
       type: DataTypes.STRING,
     },
+    publicId: {
+      type: DataTypes.STRING,
+    },
     imageableId: DataTypes.INTEGER,
     imageableType: DataTypes.STRING,
   });

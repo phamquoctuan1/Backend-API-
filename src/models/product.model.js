@@ -8,29 +8,24 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.STRING,
         allowNull: false,
         unique: true,
-        set(value) {
-          // value = value.trimStart();
-          // value = value.charAt(0).toUpperCase() + value.slice(1);
-          this.setDataValue('name', value.trim());
-        },
       },
       price: {
         type: DataTypes.INTEGER,
       },
-      amount: {
+      quantity: {
         type: DataTypes.INTEGER,
         defaultValue: 1,
+        validate: { min :0},
       },
       description: {
         type: DataTypes.TEXT,
       },
-      isPromote: {
-        type: DataTypes.BOOLEAN,
-        defaultValue: 0,
-      },
       slug: {
         type: DataTypes.STRING,
         unique: true,
+      },
+      discount_percentage: {
+        type: DataTypes.STRING,
       },
       status: {
         type: DataTypes.BOOLEAN,
@@ -40,15 +35,9 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.STRING,
       },
     },
-
     {
       paranoid: true,
       deleteAt: 'softDelete',
-      // getterMethods: {
-      //   id() {
-      //     return (this.id = undefined);
-      //   },
-      // },
     }
   );
 
