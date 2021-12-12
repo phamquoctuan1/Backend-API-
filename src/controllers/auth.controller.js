@@ -53,11 +53,10 @@ exports.Register = async (req, res) => {
     );
 
     let subject = 'Kích hoạt tài khoản của bạn';
-    let text = `Hi ${user.name} Chào mừng bạn đến với shop của chúng tôi`;
     let html = `
     <h3>Hi ${user.name} Bạn đã đăng ký tài khoản của chúng tôi xin hãy xác nhận kích hoạt tài khoản bằng cách<h3/>
     Bấm vào link <a href=http://127.0.0.1:3000/verify/account/${user.id}/${token}>này</a> để kích hoạt tài khoản của bạn`;
-    await sendEmail(user.email, subject, text, html);
+    await sendEmail(user.email, subject, html);
     await t.commit();
     res.status(201).json({ message: 'Đăng ký thành công' });
   } catch (error) {
@@ -83,7 +82,7 @@ exports.verifyUser = async (req, res) => {
       user.save();
       return res
         .status(200)
-        .json({ message: 'kích hoạt tài khoản thành công thành công' });
+        .json({ message: 'kích hoạt tài khoản thành công' });
     }
   } catch (error) {
     const { id } = req.params;
@@ -93,11 +92,10 @@ exports.verifyUser = async (req, res) => {
     );
 
     let subject = 'Kích hoạt lại tài khoản của bạn';
-    let text = `Hi ${user.name} Chào mừng bạn đến với shop của chúng tôi`;
     let html = `
     <h3>Hi ${user.name} Bạn đã đăng ký tài khoản của chúng tôi xin hãy xác nhận kích hoạt tài khoản bằng cách<h3/>
     Bấm vào link <a href=http://127.0.0.1:3000/verify/account/${user.id}/${token}>này</a> để kích hoạt tài khoản của bạn`;
-    await sendEmail(user.email, subject, text, html);
+    await sendEmail(user.email, subject, html);
     res.status(400).json({
       message:
         'Link không hợp lệ hoặc đã hết hạn, Chúng tôi đã gửi lại email mới cho bạn vui lòng xác nhận nhanh chóng',
@@ -120,8 +118,7 @@ exports.Login = async (req, res) => {
       user.password
     );
     if (!passwordIsValid) {
-      return res.status(401).json({
-        accessToken: null,
+      return res.status(404).json({
         message: 'Mật khẩu không chính xác!',
       });
     }
@@ -270,9 +267,8 @@ exports.forgetUser = async (req, res) => {
       { id: user.id, name: user.name, picture: user.picture }
     );
     let subject = 'Khôi phục lại tài khoản';
-    let text = `Xin chào ${user.name} Hãy nhấn xác nhận đường link bên dưới để có thể lấy lại tài khoản của bạn, link chỉ có thời hạn 30p vui lòng xác nhận sớm! `;
     let html = `Bấm vào link<a href=http://localhost:3000/forget/${user.id}/${token}>Này</a> để khôi mục tài khoản của bạn`;
-    await sendEmail(user.email, subject, text, html);
+    await sendEmail(user.email, subject, html);
     res.status(200).json({
       status: 'Thành công',
       message: 'Link khôi phục mật khẩu đã được gửi tới email của bạn!',

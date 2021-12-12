@@ -1,14 +1,18 @@
 const crypto = require('crypto');
 const https = require('https');
 const db = require('../models');
-const { sortObject } = require('../utils/common');
+const { sortObject, reduceArr } = require('../utils/common');
 const Product = db.product;
 const Order = db.order;
 const OrderProduct = db.order_product;
 const Op = db.Sequelize.Op;
 const queryString = require('qs');
 const dateFormat = require('dateformat');
+const sendEmail = require('../utils/sendmail');
+const payOrderEmailTemplate = require('../utils/payOrderEmailTemplate');
+
 const Shipment = db.shipment;
+const User = db.user;
 exports.checkoutNormal = async (req, response) => {
   const t = await db.sequelize.transaction();
   try {
@@ -20,7 +24,7 @@ exports.checkoutNormal = async (req, response) => {
     const data = {
       name: 'NORMALW6KW200005' + new Date().getTime(),
       amount: totalPrice + order.fee,
-      orderType: 'Nomarl',
+      orderType: 'Normal',
       userId: order.userId,
       status: 0,
     };
@@ -55,11 +59,6 @@ exports.checkoutNormal = async (req, response) => {
         },
         { transaction: t }
       );       
-        const product = await Product.findByPk(productId, {
-          transaction: t,
-        });
-        product.quantity = product.quantity - quantity
-         product.save();
     }
     
     shipment_data = {
@@ -69,7 +68,7 @@ exports.checkoutNormal = async (req, response) => {
       ship_cost: order.fee,
       status: 0,
       ship_date: new Date().toISOString(),
-      estimated_time: '5 days',
+      estimated_time: '5 ngày',
       address: order.address,
       orderId: orderStore.id,
     };
@@ -120,12 +119,13 @@ exports.checkoutMomo = async (req, response) => {
     if (orderStore)
       shipment_data = {
         phone: order.phone,
+        email: order.email,
         name_customer: order.name_customer,
         ship_method: 'ghtk',
         ship_cost: order.fee,
         status: 0,
         ship_date: new Date().toISOString(),
-        estimated_time: '5 days',
+        estimated_time: '5 ngày',
         address: order.address,
         orderId: orderStore.id,
       };
@@ -152,14 +152,9 @@ exports.checkoutMomo = async (req, response) => {
         },
         { transaction: t }
       );
-       const product = await Product.findByPk(productId, {
-         transaction: t,
-       });
-       product.quantity = product.quantity - quantity;
-       product.save();
     }
        
-    await t.commit();
+   
 
   
     const partnerCode = process.env.MOMO_PARTNER_CODE;
@@ -247,26 +242,63 @@ exports.checkoutMomo = async (req, response) => {
     // write data to request body
     momo.write(requestBody);
     momo.end();
+    await t.commit();
   } catch (error) {
     await t.rollback();
-    console.log(error);
+    response.status(500).json(error.message);
   }
 };
 
-
-
 exports.callbackMomo = async (req, res) => {
+   const t = await db.sequelize.transaction();
   const dataOrder = req.query;
   const query = queryString.stringify({
     resultCode: dataOrder.resultCode,
     message: dataOrder.message,
   });
-  const updateOrder = await Order.findByPk(Number(dataOrder.orderId));
+  const updateOrder = await Order.findByPk(Number(dataOrder.orderId), {
+    include: [
+      {
+        model: OrderProduct,
+        as: 'OrderDetails',
+      },
+      {
+        model: Shipment,
+        as: 'shipmentInfo',
+      },
+      { model: User, as: 'userInfo', attributes: ['email'] },
+    ],
+    transaction: t,
+  });
+  let subject = 'Thông báo xác nhận đơn hàng!';
+  const html = payOrderEmailTemplate(updateOrder);
   if (Number(dataOrder.resultCode) === 0) {
-    updateOrder.status = 1;
+      await sendEmail(updateOrder.shipmentInfo.email, subject, html);  
+      const shipment = await Shipment.findOne({
+        where: { orderId: Number(dataOrder.orderId) },
+      });
+     const orderDetails = await OrderProduct.findAll({
+       where: { orderId: Number(dataOrder.orderId) },
+       include: [
+         { model: Product, as: 'productInfo', attributes: ['id', 'quantity'] },
+       ],
+       transaction: t,
+     });
+      const orderDetailsAfter = reduceArr(orderDetails);
+     for (let i = 0; i < orderDetailsAfter.length; i++) {
+       const product = await Product.findByPk(orderDetailsAfter[i].productId, {
+         transaction: t,
+       });
+       product.quantity = product.quantity - orderDetailsAfter[i].quantity;
+       product.save();
+     }
+    updateOrder.status = true;
+    shipment.status = true;
     updateOrder.save();
+    t.commit();
     return res.redirect(`http://localhost:3000/checkout?${query}`);
   } else {
+    t.rollback();
     return res.redirect(`http://localhost:3000/checkout?${query}`);
   }
 };
@@ -333,21 +365,18 @@ exports.checkoutVNPAY = async (req, res) => {
          },
          { transaction: t }
        );
-        const product = await Product.findByPk(productId, {
-          transaction: t,
-        });
-        product.quantity = product.quantity - quantity;
-        product.save();
      }
         shipment_data = {
           phone: order.phone,
+          email: order.email,
           name_customer: order.name_customer,
           ship_method: 'ghtk',
           ship_cost: order.fee,
           status: 0,
           ship_date: new Date().toISOString(),
-          estimated_time: '5 days',
+          estimated_time: '5  ngày',
           address: order.address,
+          orderId: orderStore.id,
         };
         const shipment_info = await Shipment.create(shipment_data, {
           transaction: t,
@@ -406,12 +435,41 @@ exports.checkoutVNPAY = async (req, res) => {
 
 
 exports.returnVNPay = async  (req, res) => {
+   const t = await db.sequelize.transaction();
   let vnp_Params = req.query;
   const query = queryString.stringify({
     vnp_ResponseCode: vnp_Params.vnp_ResponseCode,
     message: vnp_Params.vnp_TransactionStatus,
   });
-  const updateOrder = await Order.findByPk(Number(vnp_Params.vnp_TxnRef));
+  const updateOrder = await Order.findByPk(Number(vnp_Params.vnp_TxnRef), {
+    include: [
+      {
+        model: OrderProduct,
+        as: 'OrderDetails',
+      },
+      {
+        model: Shipment,
+        as: 'shipmentInfo',
+      },
+      { model: User, as: 'userInfo', attributes: ['email'] },
+    ],
+    transaction: t,
+  }); 
+   let subject = 'Thông báo xác nhận đơn hàng!';
+   const html = payOrderEmailTemplate(updateOrder);
+  
+  const shipment = await Shipment.findOne({
+    where: { orderId: Number(vnp_Params.vnp_TxnRef) },
+  });
+  const orderDetails = await OrderProduct.findAll({
+    where: { orderId: Number(vnp_Params.vnp_TxnRef) },
+    include: [
+      { model: Product, as: 'productInfo', attributes: ['id', 'quantity'] },
+    ],
+    transaction: t,
+  });
+   const orderDetailsAfter = reduceArr(orderDetails);
+  
     var secureHash = vnp_Params['vnp_SecureHash'];
 
     delete vnp_Params['vnp_SecureHash'];
@@ -428,10 +486,21 @@ exports.returnVNPay = async  (req, res) => {
     if (secureHash === signed) {
       //Kiem tra xem du lieu trong db co hop le hay khong va thong bao ket qua
  if (vnp_Params.vnp_ResponseCode === '00') {
-   updateOrder.status = 1;
+    await sendEmail(updateOrder.shipmentInfo.email, subject, html);
+   for (let i = 0; i < orderDetailsAfter.length; i++) {
+     const product = await Product.findByPk(
+       orderDetailsAfter[i].productId
+     );
+     product.quantity = product.quantity - orderDetailsAfter[i].quantity;
+     product.save();
+   }
+   updateOrder.status = true;
+   shipment.status = true;
    updateOrder.save();
+   t.commit();
    return res.redirect(`http://localhost:3000/checkout/?${query}`);
  } else {
+   t.rollback();
    return res.redirect(`http://localhost:3000/checkout/?${query}`);
  }
 }

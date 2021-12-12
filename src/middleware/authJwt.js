@@ -82,8 +82,7 @@ isEmployeeOrAdmin = async (req, res, next) => {
       user.password
     );
     if (!passwordIsValid) {
-      return res.status(401).json({
-        accessToken: null,
+      return res.status(404).json({
         message: 'Mật khẩu không chính xác!',
       });
     }
@@ -99,8 +98,8 @@ isEmployeeOrAdmin = async (req, res, next) => {
         next();
         return;
       }
-      res.status(403).json({
-        message: 'Không được phép truy cập!',
+      return res.status(404).json({
+        message: 'Bạn không phải Admin, không quyền truy cập!',
       });
     }
   } catch (error) {

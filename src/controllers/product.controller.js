@@ -26,12 +26,12 @@ exports.getAllProduct = async (req, res) => {
       _order,
       price,
     } = req.query;
-     const LIMIT_PRODUCT = 12;
+     const LIMIT_PRODUCT = 24;
     const pageint = parseInt(_page);
     let limit = _limit ? parseInt(_limit) : LIMIT_PRODUCT;
     let offset = _page ? parseInt(_page - 1) * limit : null;
     const sort = _sort ? _sort : 'id';
-    const order = _order ? _order : 'ASC';
+    const order = _order ? _order : 'DESC';
     let conditionName = name ? { name: { [Op.like]: `%${name}%` } } : {};
     let conditionPrice = price ? { price: { [Op.between]: [price,300000] } } : {};
     let condition = {
@@ -188,6 +188,7 @@ exports.getAmountProductByCategory = async (req, res) => {
 };
 exports.createProduct = async (req, res) => {
   const t = await db.sequelize.transaction();
+ 
   const {
     name,
     price,
@@ -200,6 +201,15 @@ exports.createProduct = async (req, res) => {
     sizeInfo,
     colorInfo,
   } = req.body;
+   const prudoct = await Product.findOne({
+     where: { name: { [Op.like]: `%${name}` } },
+     transaction: t,
+   });
+   if (prudoct) {
+     return res.status(400).json({
+       message: 'Không được nhập trùng tên sản phẩm',
+     });
+   }
   try {
     const url = await uploadMultipleFile(imageInfo);
     let productData = {
@@ -310,7 +320,6 @@ exports.updateProduct = async (req, res) => {
             url: image.secure_url,
             publicId: image.public_id,
             ...{
-
               imageableId: id,
               imageableType: 'product',
               name: data.name,
@@ -325,7 +334,7 @@ exports.updateProduct = async (req, res) => {
   const imageNew = await Image.bulkCreate(imagetoUpdate, {
     transaction: t,
   });
- 
+
   const productUpdated = await Product.update(data, {
       where: { id: id },
       transaction: t,

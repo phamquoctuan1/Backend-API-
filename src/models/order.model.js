@@ -12,14 +12,14 @@ module.exports = (sequelize, DataTypes) => {
       defaultValue: 1,
     },
     orderType: {
-      type: DataTypes.STRING,
+      type: DataTypes.STRING(50),
     },
     status: {
       type: DataTypes.BOOLEAN,
       defaultValue: 0,
     },
     comfirmedBy: {
-      type: DataTypes.STRING,
+      type: DataTypes.STRING(50),
       allowNull: true,
     },
     

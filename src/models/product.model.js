@@ -32,7 +32,7 @@ module.exports = (sequelize, DataTypes) => {
         defaultValue: 1,
       },
       createdBy: {
-        type: DataTypes.STRING,
+        type: DataTypes.STRING(50),
       },
     },
     {

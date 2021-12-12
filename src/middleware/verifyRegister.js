@@ -17,7 +17,7 @@ checkDuplicateUsernameOrEmail = (req, res, next) => {
     },
   }).then((user) => {
     if (user) {
-      res.status(400).send({
+      res.status(400).json({
         message: 'Tên đăng nhập đã có người sử dụng!',
       });
       return;

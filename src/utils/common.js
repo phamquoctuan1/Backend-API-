@@ -6,6 +6,8 @@ exports.checkQuery = (...rest) => {
     }
 
 };
+exports.numberWithCommas = (num) =>
+  num?.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',') + ' VNĐ';
 
 exports.sortObject=(obj)=> {
   var sorted = {};
@@ -22,3 +24,15 @@ exports.sortObject=(obj)=> {
   }
   return sorted;
 }
+exports.reduceArr = (array) => {
+  var result = [];
+  array.reduce(function (res, value) {
+    if (!res[value.productId]) {
+      res[value.productId] = { productId: value.productId, quantity: 0 };
+      result.push(res[value.productId]);
+    }
+    res[value.productId].quantity += value.quantity;
+    return res;
+  }, {});
+  return result;
+};

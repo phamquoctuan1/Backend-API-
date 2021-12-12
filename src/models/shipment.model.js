@@ -3,7 +3,7 @@ module.exports = (sequelize, DataTypes) => {
     'shipment',
     {
       ship_method: {
-        type: DataTypes.STRING,
+        type: DataTypes.STRING(50),
       },
       ship_cost: {
         type: DataTypes.INTEGER,
@@ -17,16 +17,20 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.DATE,
       },
       estimated_time: {
-        type: DataTypes.STRING,
+        type: DataTypes.STRING(10),
+        defaultValue: '5 Ngày',
       },
       address: {
-        type: DataTypes.STRING,
+        type: DataTypes.TEXT,
       },
       phone: {
-        type: DataTypes.STRING,
+        type: DataTypes.STRING(20),
+      },
+      email: {
+        type: DataTypes.STRING(50),
       },
       name_customer: {
-        type: DataTypes.STRING,
+        type: DataTypes.STRING(50),
       },
     },
     { timestamps: false }

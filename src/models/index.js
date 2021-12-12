@@ -1,7 +1,6 @@
 const dbConfig = require('../config/db.config.js');
 require('dotenv').config();
 const { Sequelize, DataTypes } = require('sequelize');
-require('./accessories.model');
 const sequelize = new Sequelize(
   process.env.DB,
   process.env.USER,
@@ -45,9 +44,8 @@ db.connection = connection;
 db.close = close;
 
 //create instance of model
-db.accessories = require('./accessories.model.js')(sequelize, DataTypes);
+
 db.banner = require('./banner.model.js')(sequelize, DataTypes);
-db.brand = require('./brand.model.js')(sequelize, DataTypes);
 db.category = require('./category.model.js')(sequelize, DataTypes);
 db.color = require('./color.model.js')(sequelize, DataTypes);
 db.image = require('./image.model.js')(sequelize, DataTypes);
@@ -79,18 +77,7 @@ db.order.hasOne(db.shipment, {
   foreignKey: 'orderId',
   as: 'shipmentInfo',
 });
-//brand with product
-db.brand.hasMany(db.category, {
-  foreignKey: {
-    allowNull: true,
-    name: 'brandId',
-  },
-  as: 'categoryInfo',
-});
-db.category.belongsTo(db.brand, {
-  foreignKey: 'brandId',
-  as: 'brandInfo',
-});
+
 
 // user with role
 db.role.belongsToMany(db.user, {
@@ -195,16 +182,7 @@ db.image.belongsTo(db.product, {
   foreignKey: 'imageableId',
   constraints: false,
 });
-db.accessories.hasMany(db.image, {
-  foreignKey: 'imageableId',
-  constraints: false,
-  scope: {
-    imageableType: 'accessories',
-  },
-});
-db.image.belongsTo(db.accessories, {
-  foreignKey: 'imageableId',
-  constraints: false,
-});
+
+
 
 module.exports = db;

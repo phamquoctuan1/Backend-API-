@@ -6,6 +6,31 @@ const OrderProduct =db.order_product
 const { uploadFile } = require('../utils/upload');
 const Order = db.order
 const bcrypt = require('bcryptjs');
+
+const Shipment = db.shipment
+exports.getAllUser = async (req, res) => {
+  try {
+      const user = await User.findAll({
+        include: [
+          {
+            model: Order,
+            as: 'orderInfo',
+            include: [
+              {
+                model: Shipment,
+                as: 'shipmentInfo',
+              },
+            ],
+          },
+        ],
+      });
+      res.status(200).json(user);
+  } catch (error) {
+     res
+      .status(400)
+      .json({ message: 'Không tìm thấy khách hàng', error: error.message });
+  }
+}
 exports.getUserById = async (req, res) => {
   try {
      const {id} = req.params

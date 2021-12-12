@@ -4,11 +4,11 @@ module.exports = (sequelize, DataTypes) => {
     {
       // Model attributes are defined here
       name: {
-        type: DataTypes.STRING,
+        type: DataTypes.STRING(50),
         allowNull: false,
       },
       userName: {
-        type: DataTypes.STRING,
+        type: DataTypes.STRING(50),
         allowNull: false,
         unique: true,
         set(value) {
@@ -16,7 +16,7 @@ module.exports = (sequelize, DataTypes) => {
         },
       },
       email: {
-        type: DataTypes.STRING,
+        type: DataTypes.STRING(50),
         allowNull: false,
         unique: true,
       },
@@ -29,11 +29,11 @@ module.exports = (sequelize, DataTypes) => {
         defaultValue: 0,
       },
       phone: {
-        type: DataTypes.STRING,
+        type: DataTypes.STRING(20),
         allowNull: true,
       },
       address: {
-        type: DataTypes.STRING,
+        type: DataTypes.TEXT,
         allowNull: true,
       },
       picture: {

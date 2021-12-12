@@ -1,62 +1,56 @@
-export const payOrderEmailTemplate = (order) => {
-  return `<h1>Thanks for shopping with us</h1>
+const { numberWithCommas } = require("./common");
+
+ const payOrderEmailTemplate = (order) => {
+  return `<h1>Cảm ơn đã đặt hàng tại Shop_HT</h1>
   <p>
-  Hi ${order.user.name},</p>
-  <p>We have finished processing your order.</p>
-  <h2>[Order ${order._id}] (${order.createdAt.toString().substring(0, 10)})</h2>
+  Chào ${order.shipmentInfo.name_customer},</p>
+  <p>Chúng tôi nhận được đơn hàng của bạn.</p>
+  <h2>[Order ${order.name}] (${order.createdAt
+    .toString()
+    .substring(0, 10)})</h2>
   <table>
   <thead>
   <tr>
-  <td><strong>Product</strong></td>
-  <td><strong>Quantity</strong></td>
-  <td><strong align="right">Price</strong></td>
+  <td><strong>Sản phẩm</strong></td>
+  <td><strong>Số lượng</strong></td>
+  <td><strong align="right">Giá</strong></td>
   </thead>
   <tbody>
-  ${order.orderItems
-    .map(
-      (item) => `
+  ${order.OrderDetails.map(
+    (item) => `
     <tr>
-    <td>${item.name}</td>
-    <td align="center">${item.qty}</td>
-    <td align="right"> $${item.price.toFixed(2)}</td>
+    <td>${item.productName}</td>
+    <td align="center">${item.quantity}</td>
+    <td align="right"> ${numberWithCommas(item.price)}</td>
     </tr>
   `
-    )
-    .join('\n')}
+  ).join('\n')}
   </tbody>
   <tfoot>
   <tr>
-  <td colspan="2">Items Price:</td>
-  <td align="right"> $${order.itemsPrice.toFixed(2)}</td>
+  <td colspan="2">Phí ship:</td>
+  <td align="right"> ${numberWithCommas(order.shipmentInfo.ship_cost)}</td>
   </tr>
   <tr>
-  <td colspan="2">Tax Price:</td>
-  <td align="right"> $${order.taxPrice.toFixed(2)}</td>
+  <td colspan="2"><strong>Tổng tiền:</strong></td>
+  <td align="right"><strong> ${numberWithCommas(order.amount)}</strong></td>
   </tr>
   <tr>
-  <td colspan="2">Shipping Price:</td>
-  <td align="right"> $${order.shippingPrice.toFixed(2)}</td>
-  </tr>
-  <tr>
-  <td colspan="2"><strong>Total Price:</strong></td>
-  <td align="right"><strong> $${order.totalPrice.toFixed(2)}</strong></td>
-  </tr>
-  <tr>
-  <td colspan="2">Payment Method:</td>
-  <td align="right">${order.paymentMethod}</td>
+  <td colspan="2">Phương thức thanh toán:</td>
+  <td align="right">${order.orderType}</td>
   </tr>
   </table>
-  <h2>Shipping address</h2>
+  <h2>Địa chỉ giao hàng</h2>
   <p>
-  ${order.shippingAddress.fullName},<br/>
-  ${order.shippingAddress.address},<br/>
-  ${order.shippingAddress.city},<br/>
-  ${order.shippingAddress.country},<br/>
-  ${order.shippingAddress.postalCode}<br/>
+  ${order.shipmentInfo.name_customer},<br/>
+  ${order.shipmentInfo.address},<br/>
+  ${order.shipmentInfo.phone},<br/>
   </p>
   <hr/>
   <p>
-  Thanks for shopping with us.
+  Cảm ơn đã ủng hộ chúng tôi, Chúc bạn một ngày vui vẻ!.
   </p>
   `;
 };
+
+module.exports = payOrderEmailTemplate;

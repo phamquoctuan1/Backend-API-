@@ -71,10 +71,10 @@ exports.deleteCategory = async (req, res) => {
       ],
     });
     if (category.productInfo.length>0 || category.children.length>0)  
-      return res.status(400).json({ message: 'Không thể xóa danh mục này'});
+      return res.status(400).json({ message: 'Không thể ẩn danh mục này'});
       
       await Category.destroy({ where: { id: id } });
-      res.status(200).json({ message: 'Xóa thành công' });
+      res.status(200).json({ message: 'Ẩn thành công' });
   } catch (error) {
     res.status(500).json({ message: 'thất bại', error: error.message });
   }
@@ -94,7 +94,7 @@ exports.createCategory = async (req, res) => {
        transaction: t,
      });
      if (category) {
-       return res
+        return res
          .status(400)
          .json({
            message: 'Không được nhập trùng tên danh mục',
