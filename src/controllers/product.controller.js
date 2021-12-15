@@ -2,14 +2,16 @@
 const db = require('../models');
 const Op = db.Sequelize.Op;
 const Product = db.product;
+const { QueryTypes } = require('sequelize');
 const Category = db.category;
 const Image = db.image;
 const Color = db.color;
+const sequelize = db.sequelize;
 const Size = db.size;
 const Promote = db.promote;
 const Brand = db.brand;
 const OrderProduct = db.order_product;
-const { getPaginationData, getPagination } = require('../utils/pagination');
+const { getPaginationData } = require('../utils/pagination');
 const { uploadMultipleFile,deleteAllFile } = require('../utils/upload');
 
 exports.getAllProduct = async (req, res) => {
@@ -344,5 +346,47 @@ exports.updateProduct = async (req, res) => {
   } catch (error) {
     t.rollback();
     res.status(500).json({ status: 'Thất bại', message: error.message });
+  }
+};
+
+
+exports.AnalyticsProduct = async (req, res) => {
+  try {
+    const topProducts = await sequelize.query(
+      'SELECT productId,productName,count(*) as qty FROM `order_products` WHERE  createdAt BETWEEN LAST_DAY(curdate() - interval 1 month) + interval 1 day AND LAST_DAY(curdate()) group by productId ',
+      {
+        type: QueryTypes.SELECT,
+      }
+    );
+    res.status(200).json(topProducts);
+  } catch (error) {
+    res.status(400).json(error.message);
+  }
+};
+
+exports.AnalyticsPrice = async (req, res) => {
+  try {
+    const MoMo = await sequelize.query(
+      "SELECT SUM(amount) as amount ,orderType FROM `orders` WHERE orderType = 'MoMo'  AND  createdAt BETWEEN LAST_DAY(curdate() - interval 1 month) + interval 1 day AND LAST_DAY(curdate())",
+      {
+        type: QueryTypes.SELECT,
+      }
+    );
+    const VNPay = await sequelize.query(
+      "SELECT SUM(amount) as amount ,orderType FROM `orders` WHERE orderType = 'VNPay'  AND  createdAt BETWEEN LAST_DAY(curdate() - interval 1 month) + interval 1 day AND LAST_DAY(curdate())",
+      {
+        type: QueryTypes.SELECT,
+      }
+    );
+    const Normal = await sequelize.query(
+      "SELECT SUM(amount) as amount ,orderType FROM `orders` WHERE orderType = 'Normal'  AND  createdAt BETWEEN LAST_DAY(curdate() - interval 1 month) + interval 1 day AND LAST_DAY(curdate())",
+      {
+        type: QueryTypes.SELECT,
+      }
+    );
+    const data = MoMo.concat(VNPay).concat(Normal);
+    res.status(200).json(data);
+  } catch (error) {
+    res.status(400).json(error.message);
   }
 };

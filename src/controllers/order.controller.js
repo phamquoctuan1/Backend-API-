@@ -7,6 +7,8 @@ const Order = db.order;
 const OrderProduct = db.order_product;
 const Shipment = db.shipment
 const Product = db.product
+const payOrderEmailTemplate = require('../utils/payOrderEmailTemplate');
+const sendEmail = require('../utils/sendmail');
 exports.getAllOrder = async (req, res) => {
   try {
       const {_page=1,_limit=6} = req.query
@@ -49,15 +51,15 @@ exports.updateOrder  = async (req, res) => {
               as: 'OrderDetails',
             },
             {
-              model: shipment,
+              model: Shipment,
               as: 'shipmentInfo',
             },
             { model: User, as: 'userInfo', attributes: ['email'] },
           ],
         });
         let subject = 'Thông báo xác nhận đơn hàng!';
-        const html = payOrderEmailTemplate(updateOrder);
-          await sendEmail(updateOrder.shipmentInfo.email, subject, html);
+        const html = payOrderEmailTemplate(order);
+          await sendEmail(order.shipmentInfo.email, subject, html);
          const shipment = await Shipment.findOne({
            where: { orderId: req.params.id },
          });

@@ -10,6 +10,8 @@ const {
   updateProduct,
   restoreProduct,
   getProductBySlug,
+  AnalyticsProduct,
+  AnalyticsPrice,
 } = require('.././controllers/product.controller');
 router
   .get('/', getAllProduct)
@@ -23,6 +25,15 @@ router
     '/restore/:id',
     [authJwt.verifyToken, authJwt.isEmployee],
     restoreProduct
+  )
+  .get(
+    '/analytics/product/top',
+    [authJwt.verifyToken, authJwt.isEmployee],
+    AnalyticsProduct
+  )
+  .get(
+    '/analytics/amount/top',
+    [authJwt.verifyToken, authJwt.isEmployee],
+    AnalyticsPrice
   );
-
 module.exports = router;
