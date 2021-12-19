@@ -392,7 +392,7 @@ exports.checkoutVNPAY = async (req, res) => {
      const secretKey = process.env.vnp_HashSecret;
      let vnpUrl = process.env.vnp_Url;
      const returnUrl =
-       process.env === 'PRODUCTION'
+       process.env.ENVIROMENT === 'PRODUCTION'
          ? process.env.vnp_ReturnUrlProduction
          : process.env.vnp_ReturnUrl;
      const date = new Date();
