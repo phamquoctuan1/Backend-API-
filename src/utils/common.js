@@ -36,3 +36,11 @@ exports.reduceArr = (array) => {
   }, {});
   return result;
 };
+
+exports.productionConfig = function (){
+  return (result =
+    process.env.ENVIROMENT === 'PRODUCTION'
+      ? process.env.URL
+      : process.env.local);
+
+}

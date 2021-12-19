@@ -1,5 +1,6 @@
 const app = require('./src/app');
 const db = require('./src/models/index');
+const { productionConfig } = require('./src/utils/common');
 const { initialRole } = require('./src/utils/initialRole');
 const PORT = process.env.PORT || 5000;
 require('dotenv').config();
@@ -10,5 +11,5 @@ app.listen(PORT, async () => {
 
   // await initialRole();
   console.log('database sync completed');
-  console.log(`Server is running on port 127.0.0.1:${PORT}`);
+  console.log(`Server is running on port ${productionConfig()}:${PORT}`);
 });

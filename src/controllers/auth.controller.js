@@ -11,6 +11,7 @@ const { OAuth2Client } = require('google-auth-library');
 const sendEmail = require('../utils/sendmail');
 
 const randomstring = require('randomstring');
+const { productionConfig } = require('../utils/common');
 
 exports.getUser = async (req, res) => {
   res.status(200).json(req.userInfo);
@@ -55,7 +56,7 @@ exports.Register = async (req, res) => {
     let subject = 'Kích hoạt tài khoản của bạn';
     let html = `
     <h3>Hi ${user.name} Bạn đã đăng ký tài khoản của chúng tôi xin hãy xác nhận kích hoạt tài khoản bằng cách<h3/>
-    Bấm vào link <a href=http://127.0.0.1:3000/verify/account/${user.id}/${token}>này</a> để kích hoạt tài khoản của bạn`;
+    Bấm vào link <a href=${productionConfig()}/verify/account/${user.id}/${token}>này</a> để kích hoạt tài khoản của bạn`;
     await sendEmail(user.email, subject, html);
     await t.commit();
     res.status(201).json({ message: 'Đăng ký thành công' });
@@ -93,8 +94,12 @@ exports.verifyUser = async (req, res) => {
 
     let subject = 'Kích hoạt lại tài khoản của bạn';
     let html = `
-    <h3>Hi ${user.name} Bạn đã đăng ký tài khoản của chúng tôi xin hãy xác nhận kích hoạt tài khoản bằng cách<h3/>
-    Bấm vào link <a href=http://127.0.0.1:3000/verify/account/${user.id}/${token}>này</a> để kích hoạt tài khoản của bạn`;
+    <h3>Hi ${
+      user.name
+    } Bạn đã đăng ký tài khoản của chúng tôi xin hãy xác nhận kích hoạt tài khoản bằng cách<h3/>
+    Bấm vào link <a href=${productionConfig()}/verify/account/${
+      user.id
+    }/${token}>này</a> để kích hoạt tài khoản của bạn`;
     await sendEmail(user.email, subject, html);
     res.status(400).json({
       message:
@@ -267,7 +272,7 @@ exports.forgetUser = async (req, res) => {
       { id: user.id, name: user.name, picture: user.picture }
     );
     let subject = 'Khôi phục lại tài khoản';
-    let html = `Bấm vào link<a href=http://localhost:3000/forget/${user.id}/${token}>Này</a> để khôi mục tài khoản của bạn`;
+    let html = `Bấm vào link<a href=${productionConfig()}/forget/${user.id}/${token}>Này</a> để khôi mục tài khoản của bạn`;
     await sendEmail(user.email, subject, html);
     res.status(200).json({
       status: 'Thành công',

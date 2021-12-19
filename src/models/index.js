@@ -2,7 +2,11 @@ const dbConfig = require('../config/db.config.js');
 require('dotenv').config();
 const { Sequelize, DataTypes } = require('sequelize');
 
-const sequelize = new Sequelize(
+let sequelize 
+if(process.env.ENVIROMENT === 'PRODUCTION') 
+{
+  
+   sequelize = new Sequelize(
   process.env.PRODUCTION_DATABASE,
   process.env.PRODUCTION_USER,
   process.env.PRODUCTION_PASSWORD,
@@ -19,7 +23,30 @@ const sequelize = new Sequelize(
       idle: dbConfig.pool.idle,
     },
   }
-);
+)
+}
+else
+{
+   sequelize = new Sequelize(
+  process.env.DB,
+  process.env.USER,
+  process.env.PASSWORD,
+  {
+    host: process.env.HOST,
+    dialect: 'mysql',
+    operatorsAliases: 0,
+    logging: true,
+
+    pool: {
+      max: dbConfig.pool.max,
+      min: dbConfig.pool.min,
+      acquire: dbConfig.pool.acquire,
+      idle: dbConfig.pool.idle,
+    },
+  }
+);}
+
+console.log(sequelize);
 
 const connection = async () => {
   try {

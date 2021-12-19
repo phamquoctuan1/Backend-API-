@@ -1,20 +1,21 @@
 const crypto = require('crypto');
 const https = require('https');
 const db = require('../models');
-const { sortObject, reduceArr } = require('../utils/common');
-const Product = db.product;
-const Order = db.order;
-const OrderProduct = db.order_product;
-const Op = db.Sequelize.Op;
+const { sortObject, reduceArr, productionConfig } = require('../utils/common');
 const queryString = require('qs');
 const dateFormat = require('dateformat');
 const sendEmail = require('../utils/sendmail');
 const payOrderEmailTemplate = require('../utils/payOrderEmailTemplate');
-
+const Product = db.product;
+const Order = db.order;
+const OrderProduct = db.order_product;
+const Op = db.Sequelize.Op;
 const Shipment = db.shipment;
 const User = db.user;
+
 exports.checkoutNormal = async (req, response) => {
   const t = await db.sequelize.transaction();
+
   try {
     const order = req.body;
     const totalPrice = order.listItems.reduce(
@@ -60,7 +61,7 @@ exports.checkoutNormal = async (req, response) => {
         { transaction: t }
       );       
     }
-    
+
     shipment_data = {
       name_customer: order.name_customer,
       phone: order.phone,
@@ -77,6 +78,7 @@ exports.checkoutNormal = async (req, response) => {
       transaction: t,
     });
     await t.commit();
+
     response
       .status(200)
       .json({
@@ -84,6 +86,7 @@ exports.checkoutNormal = async (req, response) => {
       });
   } catch (error) {
     await t.rollback();
+
     response
       .status(400)
       .json({
@@ -383,12 +386,15 @@ exports.checkoutVNPAY = async (req, res) => {
           transaction: t,
         });
     
-     const ipAddr = '127.0.0.1';
+     const ipAddr = productionConfig();
      const tmnCode = process.env.vnp_TmnCode;
 
      const secretKey = process.env.vnp_HashSecret;
      let vnpUrl = process.env.vnp_Url;
-     const returnUrl = process.env.vnp_ReturnUrl;
+     const returnUrl =
+       process.env === 'PRODUCTION'
+         ? process.env.vnp_ReturnUrlProduction
+         : process.env.vnp_ReturnUrl;
      const date = new Date();
      const createDate = dateFormat(date, 'yyyymmddHHmmss');
      const orderId = orderStore.id;
