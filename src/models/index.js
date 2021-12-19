@@ -46,8 +46,6 @@ else
   }
 );}
 
-console.log(sequelize);
-
 const connection = async () => {
   try {
     await sequelize.authenticate();

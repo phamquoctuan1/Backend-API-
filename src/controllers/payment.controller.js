@@ -167,8 +167,8 @@ exports.checkoutMomo = async (req, response) => {
     const requestId = partnerCode + new Date().getTime();
     const orderId = orderStore.id;
     const orderInfo = 'thanh toan voi momo';
-    const redirectUrl = 'http://localhost:5000/api/payment/momo/callback';
-    const ipnUrl = 'http://localhost:5000/api/payment/momo/ipn';
+    const redirectUrl = `${productionConfig()}/api/payment/momo/callback`;
+    const ipnUrl = `${productionConfig()}/api/payment/momo/ipn`;
     // const ipnUrl = redirectUrl = "https://webhook.site/454e7b77-f177-4ece-8236-ddf1c26ba7f8";
     const amount = `${totalPrice + order.fee}`;
     const requestType = 'captureWallet';
@@ -300,10 +300,10 @@ exports.callbackMomo = async (req, res) => {
     shipment.status = true;
     updateOrder.save();
     t.commit();
-    return res.redirect(`http://localhost:3000/checkout?${query}`);
+    return res.redirect(`${process.env.URL_FRONTEND}/checkout?${query}`);
   } else {
     t.rollback();
-    return res.redirect(`http://localhost:3000/checkout?${query}`);
+    return res.redirect(`${process.env.URL_FRONTEND}/checkout?${query}`);
   }
 };
 
@@ -505,10 +505,10 @@ exports.returnVNPay = async  (req, res) => {
    shipment.status = true;
    updateOrder.save();
    t.commit();
-   return res.redirect(`http://localhost:3000/checkout/?${query}`);
+   return res.redirect(`${process.env.URL_FRONTEND}/checkout/?${query}`);
  } else {
    t.rollback();
-   return res.redirect(`http://localhost:3000/checkout/?${query}`);
+   return res.redirect(`${process.env.URL_FRONTEND}/checkout/?${query}`);
  }
 }
      
