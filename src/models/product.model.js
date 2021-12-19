@@ -7,7 +7,7 @@ module.exports = (sequelize, DataTypes) => {
       name: {
         type: DataTypes.STRING,
         allowNull: false,
-        unique: true,
+        unique: 'name',
       },
       price: {
         type: DataTypes.INTEGER,
@@ -15,14 +15,14 @@ module.exports = (sequelize, DataTypes) => {
       quantity: {
         type: DataTypes.INTEGER,
         defaultValue: 1,
-        validate: { min :0},
+        validate: { min: 0 },
       },
       description: {
         type: DataTypes.TEXT,
       },
       slug: {
         type: DataTypes.STRING,
-        unique: true,
+        unique: 'slug',
       },
       discount_percentage: {
         type: DataTypes.STRING,

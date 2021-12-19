@@ -1,4 +1,5 @@
 const express = require('express');
+const { deleteOrder, getDeletedOrder } = require('../controllers/order.controller');
 const { getAll, Analytics, AnalyticsPrice } = require('../controllers/test.controller');
 const { getAllUser } = require('../controllers/user.controller');
 const router = express.Router();
@@ -12,6 +13,8 @@ const Image = db.image;
 const User = db.user;
 const Shipment= db.shipment
 
+router.get('/order/deleted', getDeletedOrder);
 router.get('/order/:id', getAll);
 router.get('/product/top', AnalyticsPrice);
+
 module.exports = router;

@@ -108,3 +108,58 @@ exports.getOrderById = async (req, res) => {
     res.status(500).json({ message: 'thất bại', error: error.message });
   }
 };
+
+exports.deleteOrder = async (req, res) => {
+  try {
+    const id = req.params.id;
+    const deletedOrder = await Order.destroy({
+      where: { id: id },
+    });
+    const deletedShipment = await Shipment.destroy({
+       where: { orderId: id },
+     });
+    res.status(202).json({ message: 'Thành công', data: deletedOrder });
+  } catch (error) {
+    res.status(500).json({ message: 'thất bại', error: error.message });
+  }
+};
+exports.getDeletedOrder = async (req, res) => {
+    try {
+
+      const deletedShipment = await Shipment.findAll({
+        where: { deletedAt: { [Op.not]: null } },
+        include: [
+          {
+            model: Order,
+            as: 'orderInfo',
+            paranoid: false,
+            include: [
+              {
+                model: OrderProduct,
+                as: 'OrderDetails',
+              },
+            ],
+          },
+        ],
+        paranoid: false,
+      });
+      res.status(202).json({ message: 'Thành công', data: deletedShipment });
+    } catch (error) {
+      res.status(500).json({ message: 'thất bại', error: error.message });
+    }
+}
+
+exports.restoreOrder = async (req, res) => {
+  try {
+    
+    const data1 = await Order.restore({
+      where: { id:req.params.id },      
+    });
+  const data12 = await Shipment.restore({
+    where: { orderId: req.params.id },
+  });
+    res.status(202).json({ message: 'Thành công'});
+  } catch (error) {
+    res.status(500).json({ message: 'thất bại', error: error.message });
+  }
+};

@@ -33,7 +33,10 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.STRING(50),
       },
     },
-    { timestamps: false }
+    {
+      paranoid: true,
+      deleteAt: 'softDelete',
+    }
   );
   return Shipment;
 };

@@ -11,11 +11,11 @@ module.exports = (sequelize, DataTypes) => {
       name: {
         type: DataTypes.STRING,
         allowNull: false,
-        unique: true,
+        unique: 'name',
       },
       slug: {
         type: DataTypes.STRING,
-        unique: true,
+        unique: 'slug',
       },
       status: {
         type: DataTypes.BOOLEAN,
@@ -27,7 +27,7 @@ module.exports = (sequelize, DataTypes) => {
     },
     {
       paranoid: true,
-      deleteAt: 'softDelete'
+      deleteAt: 'softDelete',
     }
   );
 

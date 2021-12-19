@@ -10,7 +10,7 @@ module.exports = (sequelize, DataTypes) => {
       userName: {
         type: DataTypes.STRING(50),
         allowNull: false,
-        unique: true,
+        unique: 'userName',
         set(value) {
           this.setDataValue('userName', value.trim());
         },
@@ -18,7 +18,7 @@ module.exports = (sequelize, DataTypes) => {
       email: {
         type: DataTypes.STRING(50),
         allowNull: false,
-        unique: true,
+        unique: 'email',
       },
       password: {
         type: DataTypes.STRING,
@@ -40,11 +40,11 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.STRING,
         defaultValue:
           'https://res.cloudinary.com/quoctuan/image/upload/v1636304147/dev_setups/kc4yo5bzpwyfgrv3zctq.png',
-        allowNull: true,
+        allowNull: 'picture',
       },
       refreshToken: {
         type: DataTypes.TEXT,
-        unique: true,
+        unique: 'refreshToken',
       },
     },
     {

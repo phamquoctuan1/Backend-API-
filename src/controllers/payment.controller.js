@@ -66,6 +66,7 @@ exports.checkoutNormal = async (req, response) => {
       phone: order.phone,
       ship_method: 'ghtk',
       ship_cost: order.fee,
+      email: order.email,
       status: 0,
       ship_date: new Date().toISOString(),
       estimated_time: '5 ngày',
