@@ -7,7 +7,7 @@ const sequelize = new Sequelize(
   process.env.PRODUCTION_PASSWORD,
   {
     host: process.env.PRODUCTION_HOST,
-    dialect: process.env.PRODUCTION_DIALECT,
+    dialect: 'mysql',
     operatorsAliases: 0,
     logging: true,
 
