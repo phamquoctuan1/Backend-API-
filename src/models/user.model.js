@@ -43,7 +43,7 @@ module.exports = (sequelize, DataTypes) => {
         allowNull: 'picture',
       },
       refreshToken: {
-        type: DataTypes.TEXT,
+        type: DataTypes.STRING,
         unique: 'refreshToken',
       },
     },
