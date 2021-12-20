@@ -6,11 +6,26 @@ const sendEmail = async (email, subject, html) => {
       service: 'Gmail',
       auth: {
         // type: 'OAuth2',
-        user: process.env.MAIL_USERNAME,
-        pass: process.env.MAIL_PASSWORD,
-        clientId: process.env.OAUTH_CLIENTID,
-        clientSecret: process.env.OAUTH_CLIENT_SECRET,
-        refreshToken: process.env.OAUTH_REFRESH_TOKEN,
+        user:
+          process.env.ENVIROMENT === 'PRODUCTION'
+            ? process.env.PRODUCTION_MAIL_USERNAME
+            : process.env.MAIL_USERNAME,
+        pass:
+          process.env.ENVIROMENT === 'PRODUCTION'
+            ? process.env.PRODUCTION_MAIL_PASSWORD
+            : process.env.MAIL_PASSWORD,
+        clientId:
+          process.env.ENVIROMENT === 'PRODUCTION'
+            ? process.env.PRODUCTION_OAUTH_CLIENTID
+            : process.env.OAUTH_CLIENTID,
+        clientSecret:
+          process.env.ENVIROMENT === 'PRODUCTION'
+            ? process.env.PRODUCTION_OAUTH_CLIENT_SECRET
+            : process.env.OAUTH_CLIENT_SECRET,
+        refreshToken:
+          process.env.ENVIROMENT === 'PRODUCTION'
+            ? process.env.PRODUCTION_OAUTH_REFRESH_TOKEN
+            : process.env.OAUTH_REFRESH_TOKEN,
       },
     });
     await transporter.sendMail({
