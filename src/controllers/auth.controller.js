@@ -216,12 +216,17 @@ email} = req.userInfo;
 exports.LoginGoogle = async (req, res) => {
   try {
     const client = new OAuth2Client(
-      process.env.NODE_APP_GOOGLE_LOGIN_CLIENT_ID
+      process.env.ENVIROMENT === 'PRODUCTION'
+        ? process.env.NODE_APP_GOOGLE_LOGIN_CLIENT_ID_PRODUCTION
+        : process.env.NODE_APP_GOOGLE_LOGIN_CLIENT_ID
     );
     const { token } = req.body;
     const ticket = await client.verifyIdToken({
       idToken: token,
-      audience: process.env.NODE_APP_GOOGLE_LOGIN_CLIENT_ID,
+      audience:
+        process.env.ENVIROMENT === 'PRODUCTION'
+          ? process.env.NODE_APP_GOOGLE_LOGIN_CLIENT_ID_PRODUCTION
+          : process.env.NODE_APP_GOOGLE_LOGIN_CLIENT_ID,
     });
     const { name, email, picture } = ticket.getPayload();
     let [user, created] = await User.findOrCreate({
