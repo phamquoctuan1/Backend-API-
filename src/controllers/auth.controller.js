@@ -8,10 +8,11 @@ const { jwtCustom } = require('../utils/jwtCustom');
 const bcrypt = require('bcryptjs');
 
 const { OAuth2Client } = require('google-auth-library');
-const sendEmail = require('../utils/sendmail');
+
 
 const randomstring = require('randomstring');
 const { productionConfig } = require('../utils/common');
+const  sendEmail  = require('../utils/sendmail');
 
 exports.getUser = async (req, res) => {
   res.status(200).json(req.userInfo);

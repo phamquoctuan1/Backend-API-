@@ -1,4 +1,4 @@
-
+const queryString = require('qs');
 const db = require('../models');
 const Op = db.Sequelize.Op;
 const Product = db.product;
@@ -12,11 +12,10 @@ const Promote = db.promote;
 const Brand = db.brand;
 const OrderProduct = db.order_product;
 const { getPaginationData } = require('../utils/pagination');
-const { uploadMultipleFile,deleteAllFile } = require('../utils/upload');
+const { uploadMultipleFile, deleteAllFile } = require('../utils/upload');
 
 exports.getAllProduct = async (req, res) => {
   try {
-   
     const {
       _page,
       _limit,
@@ -28,14 +27,16 @@ exports.getAllProduct = async (req, res) => {
       _order,
       price,
     } = req.query;
-     const LIMIT_PRODUCT = 24;
+    const LIMIT_PRODUCT = 24;
     const pageint = parseInt(_page);
     let limit = _limit ? parseInt(_limit) : LIMIT_PRODUCT;
     let offset = _page ? parseInt(_page - 1) * limit : null;
     const sort = _sort ? _sort : 'id';
     const order = _order ? _order : 'DESC';
     let conditionName = name ? { name: { [Op.like]: `%${name}%` } } : {};
-    let conditionPrice = price ? { price: { [Op.between]: [price,300000] } } : {};
+    let conditionPrice = price
+      ? { price: { [Op.between]: price } }
+      : {};
     let condition = {
       ...conditionName,
       ...conditionPrice,
@@ -46,7 +47,7 @@ exports.getAllProduct = async (req, res) => {
       : null;
     let conditionColor = color ? { code: { [Op.in]: color } } : null;
     let conditionSize = size ? { name: { [Op.in]: size } } : null;
-   
+
     const product = await Product.findAndCountAll({
       where: condition,
       attributes: [
@@ -148,7 +149,7 @@ exports.getProductBySlug = async (req, res) => {
       ],
       paranoid: false,
       include: [
-        { model: Image, as: 'imageInfo', attributes: ['url','publicId'] },
+        { model: Image, as: 'imageInfo', attributes: ['url', 'publicId'] },
         {
           model: Color,
           as: 'colorInfo',
@@ -190,7 +191,7 @@ exports.getAmountProductByCategory = async (req, res) => {
 };
 exports.createProduct = async (req, res) => {
   const t = await db.sequelize.transaction();
- 
+
   const {
     name,
     price,
@@ -203,22 +204,22 @@ exports.createProduct = async (req, res) => {
     sizeInfo,
     colorInfo,
   } = req.body;
-   const prudoct = await Product.findOne({
-     where: { name: { [Op.like]: `%${name}` } },
-     transaction: t,
-   });
-   if (prudoct) {
-     return res.status(400).json({
-       message: 'Không được nhập trùng tên sản phẩm',
-     });
-   }
+  const prudoct = await Product.findOne({
+    where: { name: { [Op.like]: `%${name}` } },
+    transaction: t,
+  });
+  if (prudoct) {
+    return res.status(400).json({
+      message: 'Không được nhập trùng tên sản phẩm',
+    });
+  }
   try {
     const url = await uploadMultipleFile(imageInfo);
     let productData = {
       name: name,
       price: price,
       quantity: quantity,
-      discount_percentage:discount_percentage,
+      discount_percentage: discount_percentage,
       description: description,
       status: status,
       categoryId: categoryId,
@@ -289,66 +290,68 @@ exports.restoreProduct = async (req, res) => {
 exports.updateProduct = async (req, res) => {
   const t = await db.sequelize.transaction();
   try {
-  const { id } = req.params;
-  const data = req.body
-  let sizeToUpdate = [];
-   let colorToUpdate = [];
+    const { id } = req.params;
+    const data = req.body;
+    let sizeToUpdate = [];
+    let colorToUpdate = [];
     let imagetoUpdate = [];
-    if(data.sizeInfo.length > 0) {
-    sizeToUpdate = data.sizeInfo.map((size) => ({
+    if (data.sizeInfo.length > 0) {
+      sizeToUpdate = data.sizeInfo.map((size) => ({
         name: size.name,
         ...{ productId: id },
-      }))
-      await Size.destroy({where:{productId:id},transaction:t})
+      }));
+      await Size.destroy({ where: { productId: id }, transaction: t });
     }
 
-       if (data.colorInfo.length > 0) {
-         colorToUpdate = data.colorInfo.map((color) => ({
-           name: color.name,
-           code: color.code,
-           ...{ productId: id },
-         }));
-        await Color.destroy({ where: { productId: id },transaction:t });
-        }
-          if (data.imageInfo.length > 0 && data.imageInfo[0].hasOwnProperty('url')) {
-            imagetoUpdate = [];
-          }else{
-            const imageToDelete =  await Image.findAll({where: { imageableId: id,imageableType:'product'}})
-            const public_idsToDelete = imageToDelete.map(item=> item['publicId'])
-            await deleteAllFile(public_idsToDelete);
-            await Image.destroy({ where: { imageableId: id,imageableType:'product' },transaction:t }); 
-             const url = await uploadMultipleFile(data.imageInfo);
-            imagetoUpdate = url.map((image) => ({
-            url: image.secure_url,
-            publicId: image.public_id,
-            ...{
-              imageableId: id,
-              imageableType: 'product',
-              name: data.name,
-            },
-          }));   
-          
-           
-          }
+    if (data.colorInfo.length > 0) {
+      colorToUpdate = data.colorInfo.map((color) => ({
+        name: color.name,
+        code: color.code,
+        ...{ productId: id },
+      }));
+      await Color.destroy({ where: { productId: id }, transaction: t });
+    }
+    if (data.imageInfo.length > 0 && data.imageInfo[0].hasOwnProperty('url')) {
+      imagetoUpdate = [];
+    } else {
+      const imageToDelete = await Image.findAll({
+        where: { imageableId: id, imageableType: 'product' },
+      });
+      const public_idsToDelete = imageToDelete.map((item) => item['publicId']);
+      await deleteAllFile(public_idsToDelete);
+      await Image.destroy({
+        where: { imageableId: id, imageableType: 'product' },
+        transaction: t,
+      });
+      const url = await uploadMultipleFile(data.imageInfo);
+      imagetoUpdate = url.map((image) => ({
+        url: image.secure_url,
+        publicId: image.public_id,
+        ...{
+          imageableId: id,
+          imageableType: 'product',
+          name: data.name,
+        },
+      }));
+    }
 
-  const sizeNew = await Size.bulkCreate(sizeToUpdate,{transaction: t});
-  const colorNew = await Color.bulkCreate(colorToUpdate, { transaction: t });
-  const imageNew = await Image.bulkCreate(imagetoUpdate, {
-    transaction: t,
-  });
+    const sizeNew = await Size.bulkCreate(sizeToUpdate, { transaction: t });
+    const colorNew = await Color.bulkCreate(colorToUpdate, { transaction: t });
+    const imageNew = await Image.bulkCreate(imagetoUpdate, {
+      transaction: t,
+    });
 
-  const productUpdated = await Product.update(data, {
+    const productUpdated = await Product.update(data, {
       where: { id: id },
       transaction: t,
     });
-      t.commit()
-  res.status(200).json({ status: 'Thành Công' });
+    t.commit();
+    res.status(200).json({ status: 'Thành Công' });
   } catch (error) {
     t.rollback();
     res.status(500).json({ status: 'Thất bại', message: error.message });
   }
 };
-
 
 exports.AnalyticsProduct = async (req, res) => {
   try {

@@ -17,8 +17,8 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.STRING(50),
       },
       status: {
-        type: DataTypes.BOOLEAN,
-        defaultValue: 0,
+        type: DataTypes.STRING(50),
+        defaultValue: 'Chờ xác nhận',
       },
       comfirmedBy: {
         type: DataTypes.STRING(50),

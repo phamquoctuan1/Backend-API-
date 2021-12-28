@@ -10,5 +10,5 @@ app.listen(PORT, async () => {
   await db.sequelize.sync({ alter: false });
   // await initialRole();
   console.log('database sync completed');
-  console.log(`Server is running on port ${productionConfig()}:${PORT}`);
+  console.log(`Server is running on port ${productionConfig()}`);
 });

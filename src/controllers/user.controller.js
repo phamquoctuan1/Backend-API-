@@ -11,6 +11,7 @@ const Shipment = db.shipment
 exports.getAllUser = async (req, res) => {
   try {
       const user = await User.findAll({
+        where: {name : { [Op.ne]: `Admin`}},
         include: [
           {
             model: Order,
@@ -103,6 +104,21 @@ exports.updateUser = async (req, res) => {
     res.status(500).json({ status: 'failed', message: error.message });
   }
 };
+
+exports.adminRestoreUser = async (req, res) => {
+  try {
+    
+    const user = await User.findByPk(req.params.id);
+    password = bcrypt.hashSync('123456789', 8);
+    user.password = password
+    user.save();
+     res
+       .status(200)
+       .json({ message: 'Khôi phục tài khoản thành công!', data: user });
+}catch (error) {
+    res.status(500).json({ status: 'failed', message: error.message });
+}
+}
 exports.allAccess = (req, res) => {
   res.status(200).json('Public Content.');
 };

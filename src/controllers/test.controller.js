@@ -6,6 +6,8 @@ const Op = db.Sequelize.Op;
 const OrderProduct = db.order_product;
 const Order = db.order;
 const { QueryTypes } = require('sequelize');
+const createInvoice = require('../utils/invoicePDF');
+const sendMailPDF = require('../utils/sendMailPDF');
 const Shipment = db.shipment;
 exports.getAll = async (req, res) => {
   try {
@@ -22,6 +24,13 @@ exports.getAll = async (req, res) => {
         { model: User, as: 'userInfo',attributes:['email'] },
       ],
     });
+        let subject = `Đơn hàng ${order.name} đã được giao thành công`;
+        const html = `<h3>Xin chào ${order.shipmentInfo.name_customer} </h3> <br/> <h3>
+        Đơn hàng của bạn đã được hoàn tất. Chúng tôi gửi một hóa đơn điện tử đến hộp thử xin kiểm tra<h3/>        
+        <br/>
+        `;
+        createInvoice(order);
+        await sendMailPDF(order.shipmentInfo.email, subject, html);    
     res.status(200).json(order);
   } catch (error) {
     res
@@ -29,7 +38,6 @@ exports.getAll = async (req, res) => {
       .json({ message: 'Không tìm thấy khách hàng', error: error.message });
   }
 };
-
 
 
 exports.AnalyticsPrice = async (req, res) => {

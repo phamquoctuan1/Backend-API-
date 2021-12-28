@@ -10,15 +10,22 @@ const {
   getOrderDetailUser,
   getUserById,
   getAllUser,
+  adminRestoreUser,
 } = require('../controllers/user.controller');
 const router = express.Router();
 
-router.patch('/update', updateUser);
-router.get('/all', allAccess);
-router.get('/getorder/:id', getOrderUser);
-router.get('/:id', getUserById);
-router.get('/getorderdetail/:id', getOrderDetailUser);
-router.get('/', [authJwt.verifyToken], getAllUser);
-router.get('/mod', [authJwt.verifyToken, authJwt.isEmployee], moderatorBoard);
-router.get('/admin', [authJwt.verifyToken, authJwt.isAdmin], adminBoard);
+router
+  .patch('/update', updateUser)
+  .get('/all', allAccess)
+  .get('/getorder/:id', getOrderUser)
+  .get('/:id', getUserById)
+  .get('/getorderdetail/:id', getOrderDetailUser)
+  .get('/', [authJwt.verifyToken], getAllUser)
+  .get('/mod', [authJwt.verifyToken, authJwt.isEmployee], moderatorBoard)
+  .get('/admin', [authJwt.verifyToken, authJwt.isAdmin], adminBoard)
+  .get(
+    '/restore/:id',
+    [authJwt.verifyToken, authJwt.isEmployee],
+    adminRestoreUser
+  );
 module.exports = router;

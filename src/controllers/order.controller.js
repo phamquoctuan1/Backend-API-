@@ -8,7 +8,7 @@ const OrderProduct = db.order_product;
 const Shipment = db.shipment
 const Product = db.product
 const payOrderEmailTemplate = require('../utils/payOrderEmailTemplate');
-const sendEmail = require('../utils/sendmail');
+const  sendEmail = require('../utils/sendmail');
 exports.getAllOrder = async (req, res) => {
   try {
       const {_page=1,_limit=6} = req.query
@@ -16,20 +16,14 @@ exports.getAllOrder = async (req, res) => {
       const pageint = parseInt(_page);
       let limit = _limit ? parseInt(_limit) : LIMIT_PRODUCT;
       let offset = _page ? parseInt(_page - 1) * limit : null;
-    const order = await Shipment.findAndCountAll({
+    const order = await Order.findAndCountAll({
       include: [
-        {
-          model: Order,
-          as: 'orderInfo',
-          include: [
-            {
-              model: OrderProduct,
-              as: 'OrderDetails',
-            },
-          ],
+        {   
+              model: Shipment,
+              as: 'shipmentInfo',         
         },
       ],
-      order: [['ship_date', 'DESC']],
+      order: [['createdAt', 'DESC']],
       distinct: true,
       offset,
       limit,
@@ -59,13 +53,8 @@ exports.updateOrder  = async (req, res) => {
         });
         let subject = 'Thông báo xác nhận đơn hàng!';
         const html = payOrderEmailTemplate(order);
-          await sendEmail(order.shipmentInfo.email, subject, html);
-         const shipment = await Shipment.findOne({
-           where: { orderId: req.params.id },
-         });
-        shipment.status = true;
-        shipment.save();
-        order.status = true;
+        await sendEmail(order.shipmentInfo.email, subject, html);
+        order.status = 'Đang giao';
         order.save();
         const orderDetails = await OrderProduct.findAll({
            where: { orderId: id },

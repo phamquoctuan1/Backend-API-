@@ -4,8 +4,9 @@ const db = require('../models');
 const { sortObject, reduceArr, productionConfig } = require('../utils/common');
 const queryString = require('qs');
 const dateFormat = require('dateformat');
-const sendEmail = require('../utils/sendmail');
+
 const payOrderEmailTemplate = require('../utils/payOrderEmailTemplate');
+const sendEmail = require('../utils/sendmail');
 const Product = db.product;
 const Order = db.order;
 const OrderProduct = db.order_product;
@@ -27,7 +28,7 @@ exports.checkoutNormal = async (req, response) => {
       amount: totalPrice + order.fee,
       orderType: 'Normal',
       userId: order.userId,
-      status: 0,
+      status: 'Chờ xác nhận',
     };
     const orderStore = await Order.create(data, { transaction: t });
     const productOrder = order.listItems.map((item) => (
@@ -109,7 +110,7 @@ exports.checkoutMomo = async (req, response) => {
       amount: totalPrice + order.fee,
       orderType: 'Momo',
       userId: order.userId,
-      status: 0,
+      status: 'Chờ xác nhận',
     };
     const orderStore = await Order.create(data, { transaction: t });
     const productOrder = order.listItems.map((item) => ({
@@ -278,9 +279,6 @@ exports.callbackMomo = async (req, res) => {
   const html = payOrderEmailTemplate(updateOrder);
   if (Number(dataOrder.resultCode) === 0) {
       await sendEmail(updateOrder.shipmentInfo.email, subject, html);  
-      const shipment = await Shipment.findOne({
-        where: { orderId: Number(dataOrder.orderId) },
-      });
      const orderDetails = await OrderProduct.findAll({
        where: { orderId: Number(dataOrder.orderId) },
        include: [
@@ -296,14 +294,25 @@ exports.callbackMomo = async (req, res) => {
        product.quantity = product.quantity - orderDetailsAfter[i].quantity;
        product.save();
      }
-    updateOrder.status = true;
-    shipment.status = true;
+    updateOrder.status = 'Đang giao';
     updateOrder.save();
     t.commit();
-    return res.redirect(`${process.env.URL_FRONTEND}/checkout?${query}`);
+    return res.redirect(
+      `${
+        process.env.ENVIROMENT === 'PRODUCTION'
+          ? process.env.URL_FRONTEND
+          : process.env.URL_FRONTEND_DEV
+      }/checkout?${query}`
+    );
   } else {
     t.rollback();
-    return res.redirect(`${process.env.URL_FRONTEND}/checkout?${query}`);
+    return res.redirect(
+      `${
+        process.env.ENVIROMENT === 'PRODUCTION'
+          ? process.env.URL_FRONTEND
+          : process.env.URL_FRONTEND_DEV
+      }/checkout?${query}`
+    );
   }
 };
 
@@ -338,7 +347,7 @@ exports.checkoutVNPAY = async (req, res) => {
        amount: totalPrice + order.fee,
        orderType: 'VNPay',
        userId: order.userId,
-       status: 0,
+       status: 'Chờ xác nhận',
      };
      const orderStore = await Order.create(data, { transaction: t });
      const productOrder = order.listItems.map((item) => ({
@@ -464,10 +473,6 @@ exports.returnVNPay = async  (req, res) => {
   }); 
    let subject = 'Thông báo xác nhận đơn hàng!';
    const html = payOrderEmailTemplate(updateOrder);
-  
-  const shipment = await Shipment.findOne({
-    where: { orderId: Number(vnp_Params.vnp_TxnRef) },
-  });
   const orderDetails = await OrderProduct.findAll({
     where: { orderId: Number(vnp_Params.vnp_TxnRef) },
     include: [
@@ -501,15 +506,25 @@ exports.returnVNPay = async  (req, res) => {
      product.quantity = product.quantity - orderDetailsAfter[i].quantity;
      product.save();
    }
-   updateOrder.status = true;
-   shipment.status = true;
+   updateOrder.status = 'Đang giao';
    updateOrder.save();
    t.commit();
-   return res.redirect(`${process.env.URL_FRONTEND}/checkout/?${query}`);
+   return res.redirect(
+     `${
+       process.env.ENVIROMENT === 'PRODUCTION'
+         ? process.env.URL_FRONTEND
+         : process.env.URL_FRONTEND_DEV
+     }/checkout/?${query}`
+   );
  } else {
    t.rollback();
-   return res.redirect(`${process.env.URL_FRONTEND}/checkout/?${query}`);
+   return res.redirect(
+     `${
+       process.env.ENVIROMENT === 'PRODUCTION'
+         ? process.env.URL_FRONTEND
+         : process.env.URL_FRONTEND_DEV
+     }/checkout/?${query}`
+   );
  }
-}
-     
+}     
 };
