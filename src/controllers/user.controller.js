@@ -53,6 +53,7 @@ exports.getOrderUser = async (req, res) => {
         {
           model: Order,
           as: 'orderInfo',
+          paranoid: false,
           attributes: ['id','name', 'amount', 'status', 'createdAt', 'orderType'],
         },
       ],

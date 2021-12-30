@@ -21,5 +21,9 @@ router
     '/delete/:id',
     [authJwt.verifyToken, authJwt.isEmployee],
     deleteOrder
+  )
+  .delete(
+    '/deletebyUser/:id',
+    deleteOrder
   );
 module.exports = router;
