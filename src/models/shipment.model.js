@@ -10,8 +10,8 @@ module.exports = (sequelize, DataTypes) => {
         defaultValue: 0,
       },
       status: {
-        type: DataTypes.BOOLEAN,
-        defaultValue: 0,
+        type: DataTypes.STRING(50),
+        defaultValue: 'Đang giao',
       },
       ship_date: {
         type: DataTypes.DATE,

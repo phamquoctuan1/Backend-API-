@@ -356,7 +356,7 @@ exports.updateProduct = async (req, res) => {
 exports.AnalyticsProduct = async (req, res) => {
   try {
     const topProducts = await sequelize.query(
-      'SELECT productId,productName,count(*) as qty FROM `order_products` WHERE  createdAt BETWEEN LAST_DAY(curdate() - interval 1 month) + interval 1 day AND LAST_DAY(curdate()) group by productId ',
+      'SELECT productId,productName,count(*) as qty FROM `order_products` WHERE  createdAt BETWEEN LAST_DAY(curdate() - interval 1 month) + interval 1 day AND LAST_DAY(curdate()) group by productId',
       {
         type: QueryTypes.SELECT,
       }

@@ -82,9 +82,7 @@ exports.updateShipment = async (req, res) => {
         },
       ],
     });
-    console.log(order);
-    console.log(shipment);
-    shipment.status = true;
+    shipment.status = 'Đã giao thành công';
     shipment.save(); 
     order.status = 'Đã giao';
     order.save();
@@ -103,3 +101,47 @@ exports.updateShipment = async (req, res) => {
   }
 };
 
+
+exports.cancelShipment = async (req, res) => {
+  try {
+    const shipment = await Shipment.findByPk(req.params.id, {
+      include: [
+        {
+          model: Order,
+          as: 'orderInfo',
+          include: [
+            {
+              model: OrderProduct,
+              as: 'OrderDetails',
+            },
+            {
+              model: User,
+              as: 'userInfo',
+            },
+          ],
+        },
+      ],
+    });
+    const order = await Order.findByPk(shipment.orderInfo.id, {
+      include: [
+        {
+          model: OrderProduct,
+          as: 'OrderDetails',
+        },
+        {
+          model: Shipment,
+          as: 'shipmentInfo',
+        },
+      ],
+    });
+    shipment.status = 'Giao hàng không thành công';
+    shipment.save();
+    order.status = 'Đơn hàng giao không thành công';
+    order.save();
+    res.status(200).json(order);
+  } catch (error) {
+    res
+      .status(400)
+      .json({ message: 'Xảy ra lỗi thử lại sau', error: error.message });
+  }
+};
